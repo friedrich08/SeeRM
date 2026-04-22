@@ -23,7 +23,7 @@ services:
         value: "https://relatel-frontend.onrender.com"
 
   # Frontend Static Site
-  - type: static
+  - type: web
     name: relatel-frontend
     env: static
     rootDir: frontend
