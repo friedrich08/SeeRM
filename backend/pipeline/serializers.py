@@ -8,3 +8,4 @@ class OpportunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Opportunity
         fields = '__all__'
+        read_only_fields = ('owner',)

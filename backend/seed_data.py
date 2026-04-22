@@ -31,24 +31,26 @@ def populate() -> None:
 
         users = []
         users_data = [
-            ("admin@relatel.tg", "Admin", "Relatel", True),
-            ("sales@relatel.tg", "Awa", "Mensah", False),
-            ("finance@relatel.tg", "Kodjo", "Ameko", False),
-            ("support@relatel.tg", "Sena", "Tete", False),
-            ("manager@relatel.tg", "Komi", "Ablode", False),
-            ("ops@relatel.tg", "Mawuena", "Koffi", False),
+            ("admin@relatel.tg", "Admin", "Relatel", True, "ADMIN"),
+            ("sales@relatel.tg", "Awa", "Mensah", False, "SALES"),
+            ("finance@relatel.tg", "Kodjo", "Ameko", False, "FINANCE"),
+            ("support@relatel.tg", "Sena", "Tete", False, "SUPPORT"),
+            ("manager@relatel.tg", "Komi", "Ablode", False, "MANAGER"),
+            ("ops@relatel.tg", "Mawuena", "Koffi", False, "SALES"),
         ]
-        for email, first_name, last_name, is_admin in users_data:
+        for email, first_name, last_name, is_admin, role in users_data:
             if is_admin:
                 user, _ = CustomUser.objects.get_or_create(
                     email=email,
                     defaults={
                         "first_name": first_name,
                         "last_name": last_name,
+                        "role": role,
                         "is_staff": True,
                         "is_superuser": True,
                     },
                 )
+                user.role = role
                 user.set_password("Admin@12345")
                 user.save()
             else:
@@ -57,6 +59,7 @@ def populate() -> None:
                     password="Relatel@123",
                     first_name=first_name,
                     last_name=last_name,
+                    role=role,
                 )
             users.append(user)
 
@@ -95,9 +98,23 @@ def populate() -> None:
                 "+228 22 33 44 55",
                 "PROSPECT",
             ),
+            (
+                "TVT (Television Togolaise)",
+                "22810000000007",
+                "Quartier Administratif, Lome",
+                "info@tvt.tg",
+                "+228 22 21 32 32",
+                "CLIENT",
+            ),
         ]
         clients = []
+        sales_users = []
+        for u in users:
+            if not u.is_superuser:
+                sales_users.append(u)
+
         for nom_societe, siret, adresse, email, telephone, type_client in clients_payload:
+            owner = sales_users[len(clients) % len(sales_users)]
             clients.append(
                 Client.objects.create(
                     nom_societe=nom_societe,
@@ -106,6 +123,7 @@ def populate() -> None:
                     email_principal=email,
                     telephone=telephone,
                     type_client=type_client,
+                    owner=owner,
                 )
             )
 
@@ -135,6 +153,8 @@ def populate() -> None:
             ("Plateforme onboarding corporate", clients[3], Decimal("31000000"), "PROPOSITION", "HIGH", today + datetime.timedelta(days=27)),
             ("Campagne acquisition B2B", clients[4], Decimal("12000000"), "PROSPECT", "NORMAL", today + datetime.timedelta(days=15)),
             ("Support applicatif annuel", clients[5], Decimal("6800000"), "GAGNE", "LOW", today + datetime.timedelta(days=10)),
+            ("Audit cybersecurite", clients[0], Decimal("9500000"), "PERDU", "NORMAL", today - datetime.timedelta(days=12)),
+            ("Refonte CRM multicanal", clients[3], Decimal("18000000"), "GAGNE", "HIGH", today - datetime.timedelta(days=4)),
         ]
         for titre, client, montant_estime, statut, priorite, date_echeance in opportunities_payload:
             Opportunity.objects.create(
@@ -145,6 +165,7 @@ def populate() -> None:
                 priorite=priorite,
                 date_echeance=date_echeance,
                 description=f"Dossier {titre} en FCFA.",
+                owner=client.owner,
             )
 
         devis_payload = [
@@ -157,7 +178,7 @@ def populate() -> None:
         ]
         devis_created = []
         for client, statut, notes in devis_payload:
-            devis_created.append(Devis.objects.create(client=client, statut=statut, notes=notes))
+            devis_created.append(Devis.objects.create(client=client, statut=statut, notes=notes, owner=client.owner))
 
         devis_lines = [
             (devis_created[0], "Audit infrastructures", Decimal("3500000"), 1),
@@ -188,7 +209,9 @@ def populate() -> None:
             (clients[5], devis_created[5], "ENVOYE"),
         ]
         for client, devis_origine, statut in facture_payload:
-            factures.append(Facture.objects.create(client=client, devis_origine=devis_origine, statut=statut))
+            factures.append(
+                Facture.objects.create(client=client, devis_origine=devis_origine, statut=statut, owner=client.owner)
+            )
 
         facture_lines = [
             (factures[0], "Maintenance preventive", Decimal("1100000"), 3),
@@ -214,10 +237,11 @@ def populate() -> None:
             ("Le comite Ecobank valide sous reserve juridique.", "Parfait, nous partageons les documents aujourd'hui."),
             ("Yas demande un pilote plus court.", "On peut proposer un pilote sur 6 semaines."),
             ("Pouvez-vous activer une astreinte weekend ?", "Oui, l'option est disponible dans l'avenant."),
+            ("Quel est le statut de l'audit TVT ?", "L'audit est en cours de finalisation."),
         ]
         for idx, client in enumerate(clients):
             conv = Conversation.objects.create(client=client)
-            conv.participants.add(users[(idx % (len(users) - 1)) + 1], users[0])
+            conv.participants.add(client.owner, users[0])
             Message.objects.create(conversation=conv, sender=None, content=conv_texts[idx][0], is_from_prospect=True)
             Message.objects.create(
                 conversation=conv,

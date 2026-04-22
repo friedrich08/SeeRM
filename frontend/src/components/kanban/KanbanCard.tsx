@@ -1,4 +1,3 @@
-import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, MessageCircle, Link2, Flag } from 'lucide-react';
@@ -76,4 +75,8 @@ export const KanbanCard = ({ item, isOverlay }: any) => {
             <span className="text-[10px] font-bold">3</span>
           </div>
           <span className="text-[12px] font-bold text-brand-primary">{formatXOF(amount)}</span>
-       
+        </div>
+      </div>
+    </div>
+  );
+};

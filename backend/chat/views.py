@@ -1,7 +1,8 @@
 from rest_framework import serializers, viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import PermissionDenied
 from .models import Conversation, Message
 from crm_core.serializers import ClientSerializer
+from users.permissions import ChatPermission
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,6 +18,16 @@ class ConversationSerializer(serializers.ModelSerializer):
         fields = ['id', 'client', 'client_detail', 'messages']
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    queryset = Conversation.objects.all()
+    queryset = Conversation.objects.none()
     serializer_class = ConversationSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [ChatPermission]
+
+    def get_queryset(self):
+        return Conversation.objects.filter(participants=self.request.user).distinct().order_by('-updated_at')
+
+    def perform_create(self, serializer):
+        client = serializer.validated_data['client']
+        if client.owner_id != self.request.user.id:
+            raise PermissionDenied("Conversation non autorisee pour ce client.")
+        conversation = serializer.save()
+        conversation.participants.add(self.request.user)

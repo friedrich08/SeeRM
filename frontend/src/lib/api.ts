@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,5 +17,18 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const isAuthEndpoint = error?.config?.url?.includes('/auth/login/');
+    if (status === 401 && !isAuthEndpoint) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

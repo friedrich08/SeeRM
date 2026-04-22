@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useClientStore } from '../store/useClientStore';
 import { ClientModal } from '../components/ui/ClientModal';
+import { useAuthStore } from '../store/useAuthStore';
 import { 
   Search, 
   Plus, 
-  MoreHorizontal, 
   Mail, 
   Phone, 
   Building2,
@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 
 const Clients = () => {
+  const can = useAuthStore((state) => state.can);
+  const canWriteClients = can('clients', 'write');
   const { clients, isLoading, fetchClients, deleteClient } = useClientStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,16 +35,18 @@ const Clients = () => {
           <h1 className="text-3xl font-bold mb-1">Gestion des Clients</h1>
           <p className="text-brand-secondary">Consultez et gérez votre base de données clients et prospects.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-brand-primary text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-brand-primary/20 hover:scale-105 transition-transform active:scale-95 flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Nouveau Client
-        </button>
+        {canWriteClients && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-brand-primary text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-brand-primary/20 hover:scale-105 transition-transform active:scale-95 flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Nouveau Client
+          </button>
+        )}
       </header>
 
-      <ClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {canWriteClients && <ClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />}
 
       {/* Filters & Search */}
       <div className="mb-6 flex gap-4">
@@ -122,12 +126,14 @@ const Clients = () => {
                         <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100 shadow-none hover:shadow-sm">
                           <ExternalLink size={18} />
                         </button>
-                        <button 
-                          onClick={() => { if(confirm('Supprimer ce client ?')) deleteClient(client.id) }}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100 shadow-none hover:shadow-sm"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {canWriteClients && (
+                          <button 
+                            onClick={() => { if(confirm('Supprimer ce client ?')) deleteClient(client.id) }}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100 shadow-none hover:shadow-sm"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

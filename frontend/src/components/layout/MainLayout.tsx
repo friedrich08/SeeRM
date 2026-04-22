@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
-import { Search, Bell, Share2, Plus } from 'lucide-react';
+import { Search, Share2, Plus } from 'lucide-react';
 
 export const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -11,9 +11,9 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Header */}
         <header className="h-16 px-8 flex justify-between items-center bg-white/50 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-100/50">
           <div className="flex items-center gap-4 text-gray-400 text-xs">
-            <span>Tasks</span>
+            <span>CRM</span>
             <span>/</span>
-            <span className="text-brand-primary font-medium">Tasks report</span>
+            <span className="text-brand-primary font-medium">Vue operationnelle</span>
           </div>
 
           <div className="flex items-center gap-6">
@@ -21,7 +21,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input 
                 type="text" 
-                placeholder="Search" 
+                placeholder="Rechercher" 
                 className="bg-gray-100/50 border-none rounded-lg py-1.5 pl-10 pr-4 text-xs w-64 focus:ring-1 focus:ring-gray-200 transition-all outline-none"
               />
             </div>
@@ -32,7 +32,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
               </button>
               <button className="bg-brand-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
                 <Plus size={14} />
-                Create task
+                Creer une tache
               </button>
             </div>
           </div>

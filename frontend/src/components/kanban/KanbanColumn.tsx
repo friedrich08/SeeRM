@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { KanbanCard } from './KanbanCard';
@@ -35,7 +34,7 @@ export const KanbanColumn = ({ id, title, items }: any) => {
         ref={setNodeRef}
         className="flex-1 space-y-4 min-h-[500px]"
       >
-        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={items.map((i: any) => i.id)} strategy={verticalListSortingStrategy}>
           {items.map((item: any) => (
             <KanbanCard key={item.id} item={item} />
           ))}

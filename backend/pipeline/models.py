@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from crm_core.models import Client
 
 class Opportunity(models.Model):
@@ -24,6 +25,7 @@ class Opportunity(models.Model):
     priorite = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='NORMAL')
     date_echeance = models.DateField('date d\'échéance', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='opportunities', null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

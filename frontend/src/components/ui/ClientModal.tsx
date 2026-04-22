@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useClientStore } from '../../store/useClientStore';
 
+type ClientType = 'PROSPECT' | 'CLIENT';
+
 export const ClientModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const { addClient } = useClientStore();
   const [formData, setFormData] = useState({
@@ -10,7 +12,7 @@ export const ClientModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () 
     telephone: '',
     siret: '',
     adresse: '',
-    type_client: 'PROSPECT'
+    type_client: 'PROSPECT' as ClientType
   });
 
   if (!isOpen) return null;
@@ -73,7 +75,7 @@ export const ClientModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () 
             <select 
               className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all outline-none appearance-none"
               value={formData.type_client}
-              onChange={e => setFormData({...formData, type_client: e.target.value as any})}
+              onChange={e => setFormData({...formData, type_client: e.target.value as ClientType})}
             >
               <option value="PROSPECT">Prospect</option>
               <option value="CLIENT">Client</option>

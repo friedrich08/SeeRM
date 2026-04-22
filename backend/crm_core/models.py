@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class Client(models.Model):
     TYPES = (
@@ -11,6 +12,7 @@ class Client(models.Model):
     email_principal = models.EmailField('email principal')
     telephone = models.CharField('téléphone', max_length=20, blank=True, null=True)
     type_client = models.CharField('type', max_length=20, choices=TYPES, default='PROSPECT')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='clients', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

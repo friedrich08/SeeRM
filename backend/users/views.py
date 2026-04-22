@@ -1,13 +1,15 @@
 from django.conf import settings
 from django.core.mail import send_mail
-from allauth.socialaccount.models import SocialApp
+from django.shortcuts import redirect
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser
+from .permissions import SystemPermission, build_permissions_payload
+from .social_oauth import ensure_google_social_app
 
 
 class RegisterView(APIView):
@@ -35,7 +37,13 @@ class RegisterView(APIView):
         refresh = RefreshToken.for_user(user)
         return Response(
             {
-                "user": {"id": user.id, "email": user.email, "first_name": user.first_name, "last_name": user.last_name},
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": user.role,
+                },
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
             },
@@ -43,11 +51,41 @@ class RegisterView(APIView):
         )
 
 
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role,
+                "permissions": build_permissions_payload(user),
+            }
+        )
+
+
+class GoogleCallbackJWTView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:5173").rstrip("/")
+        if not request.user.is_authenticated:
+            return redirect(f"{frontend_url}/auth?google_error=unauthenticated")
+
+        refresh = RefreshToken.for_user(request.user)
+        access = str(refresh.access_token)
+        return redirect(f"{frontend_url}/auth?access={access}&refresh={str(refresh)}")
+
+
 class SystemStatusView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        google_configured = SocialApp.objects.filter(provider="google").exists()
+        google_configured, google_note = ensure_google_social_app()
         email_ready = bool(getattr(settings, "DEFAULT_FROM_EMAIL", "")) and bool(getattr(settings, "EMAIL_BACKEND", ""))
         return Response(
             {
@@ -58,7 +96,7 @@ class SystemStatusView(APIView):
                 "google_oauth": {
                     "configured": google_configured,
                     "login_url": "/accounts/google/login/?process=login",
-                    "note": "Pour Cloudflare, configure le domaine public et l'URL de callback dans Google Console.",
+                    "note": google_note,
                 },
                 "admin": {"url": "/admin/"},
                 "email": {
@@ -71,7 +109,7 @@ class SystemStatusView(APIView):
 
 
 class TestEmailView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, SystemPermission]
 
     def post(self, request):
         to_email = (request.data.get("to_email") or "").strip()

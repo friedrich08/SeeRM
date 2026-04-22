@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from crm_core.models import Client
 import datetime
 
@@ -16,6 +17,7 @@ class DocumentBase(models.Model):
     date_echeance = models.DateField(blank=True, null=True)
     statut = models.CharField(max_length=20, choices=STATUS_CHOICES, default='BROUILLON')
     notes = models.TextField(blank=True, null=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

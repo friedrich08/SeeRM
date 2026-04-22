@@ -11,7 +11,7 @@ class LigneArticleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DevisSerializer(serializers.ModelSerializer):
-    lignes = LigneArticleSerializer(many=True, read_only=True)
+    lignes = LigneArticleSerializer(many=True, required=False)
     client_detail = ClientSerializer(source='client', read_only=True)
     total_ht = serializers.ReadOnlyField()
     total_ttc = serializers.ReadOnlyField()
@@ -19,9 +19,18 @@ class DevisSerializer(serializers.ModelSerializer):
     class Meta:
         model = Devis
         fields = '__all__'
+        read_only_fields = ('owner',)
+        extra_kwargs = {'numero': {'required': False}}
+
+    def create(self, validated_data):
+        lignes_data = self.context.get('request').data.get('lignes', [])
+        devis = Devis.objects.create(**validated_data)
+        for ligne_data in lignes_data:
+            LigneArticle.objects.create(devis=devis, **ligne_data)
+        return devis
 
 class FactureSerializer(serializers.ModelSerializer):
-    lignes = LigneArticleSerializer(many=True, read_only=True)
+    lignes = LigneArticleSerializer(many=True, required=False)
     client_detail = ClientSerializer(source='client', read_only=True)
     total_ht = serializers.ReadOnlyField()
     total_ttc = serializers.ReadOnlyField()
@@ -29,3 +38,12 @@ class FactureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Facture
         fields = '__all__'
+        read_only_fields = ('owner',)
+        extra_kwargs = {'numero': {'required': False}}
+
+    def create(self, validated_data):
+        lignes_data = self.context.get('request').data.get('lignes', [])
+        facture = Facture.objects.create(**validated_data)
+        for ligne_data in lignes_data:
+            LigneArticle.objects.create(facture=facture, **ligne_data)
+        return facture
