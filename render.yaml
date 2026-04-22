@@ -2,7 +2,7 @@ services:
   # Backend Web Service
   - type: web
     name: relatel-backend
-    env: python
+    runtime: python
     rootDir: backend
     buildCommand: ./build.sh
     startCommand: daphne -b 0.0.0.0 -p $PORT relatel_prj.asgi:application
@@ -25,7 +25,7 @@ services:
   # Frontend Static Site
   - type: web
     name: relatel-frontend
-    env: static
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     publishPath: dist
