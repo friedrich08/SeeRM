@@ -60,7 +60,7 @@ const Settings = () => {
             Ouvrir l'admin Django
             <ExternalLink size={14} />
           </a>
-          <p className="text-xs text-gray-400">Compte seed admin: admin@relatel.tg / Admin@12345</p>
+          <p className="text-xs text-gray-400">Compte seed admin: admin@seerm.tg / Admin@12345</p>
         </div>
 
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">

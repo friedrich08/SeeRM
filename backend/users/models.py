@@ -23,17 +23,29 @@ class CustomUser(AbstractUser):
     ROLE_SALES = 'SALES'
     ROLE_FINANCE = 'FINANCE'
     ROLE_SUPPORT = 'SUPPORT'
+    ROLE_CLIENT = 'CLIENT'
+    
     ROLE_CHOICES = (
         (ROLE_ADMIN, 'Administrateur'),
         (ROLE_MANAGER, 'Manager'),
         (ROLE_SALES, 'Commercial'),
         (ROLE_FINANCE, 'Finance'),
         (ROLE_SUPPORT, 'Support'),
+        (ROLE_CLIENT, 'Client'),
     )
 
     username = None
     email = models.EmailField('adresse email', unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_SALES)
+    
+    # New field to link a User to a specific Client company
+    client_link = models.ForeignKey(
+        'crm_core.Client', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='linked_users'
+    )
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

@@ -26,11 +26,11 @@ def ensure_google_social_app() -> tuple[bool, str]:
     try:
         site, _ = Site.objects.get_or_create(
             id=getattr(settings, "SITE_ID", 1),
-            defaults={"domain": _backend_domain(), "name": "Relatel"},
+            defaults={"domain": _backend_domain(), "name": "SeeRM"},
         )
         if site.domain != _backend_domain():
             site.domain = _backend_domain()
-            site.name = "Relatel"
+            site.name = "SeeRM"
             site.save(update_fields=["domain", "name"])
 
         app, _ = SocialApp.objects.get_or_create(

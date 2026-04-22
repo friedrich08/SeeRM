@@ -23,9 +23,11 @@ interface Client {
 
 interface ClientStore {
   clients: Client[];
+  currentClient: Client | null;
   isLoading: boolean;
   error: string | null;
   fetchClients: () => Promise<void>;
+  fetchClient: (id: number) => Promise<void>;
   addClient: (client: Partial<Client>) => Promise<void>;
   updateClient: (id: number, client: Partial<Client>) => Promise<void>;
   deleteClient: (id: number) => Promise<void>;
@@ -33,6 +35,7 @@ interface ClientStore {
 
 export const useClientStore = create<ClientStore>((set, get) => ({
   clients: [],
+  currentClient: null,
   isLoading: false,
   error: null,
 
@@ -41,6 +44,16 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     try {
       const response = await api.get('/clients/');
       set({ clients: response.data, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+
+  fetchClient: async (id) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.get(`/clients/${id}/`);
+      set({ currentClient: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }

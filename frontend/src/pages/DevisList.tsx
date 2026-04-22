@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, useMemo } from 'react';
 import { useFinanceStore } from '../store/useFinanceStore';
-import { FileText, Download, Plus, FileSearch, Receipt } from 'lucide-react';
+import { FileText, Download, Plus, FileSearch, Receipt, Search } from 'lucide-react';
 import { formatXOF } from '../lib/currency';
 import api from '../lib/api';
 import { useAuthStore } from '../store/useAuthStore';
@@ -23,6 +23,7 @@ const DevisList = () => {
   const [activeTab, setActiveTab] = useState<'devis' | 'factures'>('devis');
   const [clients, setClients] = useState<Array<{ id: number; nom_societe: string }>>([]);
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [form, setForm] = useState({
     client: '',
@@ -36,6 +37,14 @@ const DevisList = () => {
     fetchFactures();
     api.get('/clients/').then((response) => setClients(response.data));
   }, [fetchDevis, fetchFactures]);
+
+  const filteredData = useMemo(() => {
+    const data = activeTab === 'devis' ? devis : factures;
+    return data.filter(item => 
+        item.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.client_detail?.nom_societe.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [activeTab, devis, factures, searchTerm]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -56,8 +65,6 @@ const DevisList = () => {
     setShowForm(false);
   };
 
-  const currentData = activeTab === 'devis' ? devis : factures;
-
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header className="mb-8 flex justify-between items-end">
@@ -76,19 +83,31 @@ const DevisList = () => {
         )}
       </header>
 
-      <div className="flex gap-4 mb-6">
-        <button 
-          onClick={() => setActiveTab('devis')}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'devis' ? 'bg-brand-primary text-white shadow-md' : 'bg-white text-gray-500 border border-gray-100'}`}
-        >
-          Devis
-        </button>
-        <button 
-          onClick={() => setActiveTab('factures')}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'factures' ? 'bg-brand-primary text-white shadow-md' : 'bg-white text-gray-500 border border-gray-100'}`}
-        >
-          Factures
-        </button>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-4">
+            <button 
+            onClick={() => setActiveTab('devis')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'devis' ? 'bg-brand-primary text-white shadow-md' : 'bg-white text-gray-500 border border-gray-100'}`}
+            >
+            Devis
+            </button>
+            <button 
+            onClick={() => setActiveTab('factures')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'factures' ? 'bg-brand-primary text-white shadow-md' : 'bg-white text-gray-500 border border-gray-100'}`}
+            >
+            Factures
+            </button>
+        </div>
+        <div className="relative max-w-xs w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input 
+                type="text" 
+                placeholder="Rechercher..."
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent/20 transition-all shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </div>
       </div>
 
       {showForm && canWriteFinance && (
@@ -172,8 +191,8 @@ const DevisList = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto"></div>
                   </td>
                 </tr>
-              ) : currentData.length > 0 ? (
-                currentData.map((item) => (
+              ) : filteredData.length > 0 ? (
+                filteredData.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-4 font-mono text-sm font-bold text-brand-primary">{item.numero}</td>
                     <td className="px-6 py-4">
@@ -218,29 +237,6 @@ const DevisList = () => {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-6">
-          <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
-            <FileText size={28} />
-          </div>
-          <div>
-            <h4 className="text-lg font-bold">Relances Automatiques</h4>
-            <p className="text-sm text-brand-secondary">Emails de rappel pour factures en retard.</p>
-          </div>
-          <button className="ml-auto text-sm font-bold text-brand-primary hover:underline">Actif</button>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-6">
-          <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
-            <Receipt size={28} />
-          </div>
-          <div>
-            <h4 className="text-lg font-bold">Journaux de ventes</h4>
-            <p className="text-sm text-brand-secondary">Exportez vos rapports comptables mensuels.</p>
-          </div>
-          <button className="ml-auto text-sm font-bold text-brand-primary hover:underline">Exporter</button>
         </div>
       </div>
     </div>

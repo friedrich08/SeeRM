@@ -6,108 +6,85 @@ type AuthUser = {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'ADMIN' | 'MANAGER' | 'SALES' | 'FINANCE' | 'SUPPORT';
-  permissions: Record<string, { read: boolean; write: boolean }>;
+  role: 'ADMIN' | 'MANAGER' | 'SALES' | 'FINANCE' | 'SUPPORT' | 'CLIENT';
+  client_link?: number;
+  permissions?: Record<string, Record<string, boolean>>;
 };
 
-type RegisterPayload = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  password: string;
-};
-
-type AuthState = {
+interface AuthStore {
   user: AuthUser | null;
-  isLoading: boolean;
+  token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   error: string | null;
-  initAuth: () => Promise<void>;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (payload: RegisterPayload) => Promise<boolean>;
-  completeSocialAuth: (access: string, refresh: string) => Promise<void>;
-  can: (module: string, action?: 'read' | 'write') => boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: any) => Promise<void>;
   logout: () => void;
-};
+  fetchMe: () => Promise<void>;
+  initAuth: () => Promise<void>;
+  completeSocialAuth: (access: string, refresh: string) => Promise<void>;
+  can: (module: string, action: string) => boolean;
+}
 
-const persistTokens = (access?: string, refresh?: string) => {
-  if (access) localStorage.setItem('token', access);
-  if (refresh) localStorage.setItem('refresh_token', refresh);
-};
-
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
-  isLoading: false,
+  token: localStorage.getItem('token'),
   isAuthenticated: !!localStorage.getItem('token'),
+  isLoading: false,
   error: null,
 
   initAuth: async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      set({ isAuthenticated: false, user: null });
+      set({ isLoading: false });
       return;
     }
-    set({ isLoading: true, error: null });
-    try {
-      const response = await api.get('/auth/me/');
-      set({ user: response.data, isAuthenticated: true, isLoading: false });
-    } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
-      set({ user: null, isAuthenticated: false, isLoading: false });
-    }
+    set({ isLoading: true });
+    await get().fetchMe();
   },
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
       const response = await api.post('/auth/login/', { email, password });
-      persistTokens(response.data?.access, response.data?.refresh);
-      const me = await api.get('/auth/me/');
-      set({ user: me.data, isAuthenticated: true, isLoading: false });
-      return true;
+      localStorage.setItem('token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      set({ token: response.data.access, isAuthenticated: true });
+      await get().fetchMe();
     } catch (error: any) {
-      set({
-        error: error?.response?.data?.detail || 'Echec de connexion.',
-        isLoading: false,
-        isAuthenticated: false,
-      });
-      return false;
+      set({ error: error.response?.data?.detail || 'Identifiants invalides', isLoading: false });
     }
   },
 
-  register: async (payload) => {
+  register: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/auth/register/', payload);
-      persistTokens(response.data?.access, response.data?.refresh);
-      const me = await api.get('/auth/me/');
-      set({ user: me.data, isAuthenticated: true, isLoading: false });
-      return true;
+      const response = await api.post('/auth/register/', data);
+      localStorage.setItem('token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      set({ token: response.data.access, isAuthenticated: true, user: response.data.user });
     } catch (error: any) {
-      set({
-        error: error?.response?.data?.detail || 'Echec de creation du compte.',
-        isLoading: false,
-        isAuthenticated: false,
-      });
-      return false;
+      set({ error: error.response?.data?.detail || 'Erreur lors de l\'inscription', isLoading: false });
     }
   },
 
-  completeSocialAuth: async (access, refresh) => {
-    persistTokens(access, refresh);
-    set({ isLoading: true, error: null });
+  fetchMe: async () => {
     try {
-      const me = await api.get('/auth/me/');
-      set({ user: me.data, isAuthenticated: true, isLoading: false });
-    } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      const response = await api.get('/auth/me/');
+      set({ user: response.data, isAuthenticated: true, isLoading: false });
+    } catch (error) {
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },
 
-  can: (module, action = 'read') => {
+  completeSocialAuth: async (access, refresh) => {
+    localStorage.setItem('token', access);
+    localStorage.setItem('refresh_token', refresh);
+    set({ token: access, isAuthenticated: true });
+    await get().fetchMe();
+  },
+
+  can: (module, action) => {
     const user = get().user;
     if (!user) return false;
     if (user.role === 'ADMIN') return true;
@@ -117,6 +94,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
-    set({ user: null, isAuthenticated: false, error: null });
+    set({ user: null, isAuthenticated: false, error: null, token: null });
   },
 }));

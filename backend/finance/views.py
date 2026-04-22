@@ -16,8 +16,15 @@ class DevisViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == 'ADMIN':
-            return Devis.objects.all().order_by('-updated_at')
-        return Devis.objects.filter(owner=self.request.user).order_by('-updated_at')
+            queryset = Devis.objects.all()
+        else:
+            queryset = Devis.objects.filter(owner=self.request.user)
+            
+        client_id = self.request.query_params.get('client')
+        if client_id:
+            queryset = queryset.filter(client_id=client_id)
+            
+        return queryset.order_by('-updated_at')
 
     def perform_create(self, serializer):
         client = serializer.validated_data['client']
@@ -47,8 +54,15 @@ class FactureViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == 'ADMIN':
-            return Facture.objects.all().order_by('-updated_at')
-        return Facture.objects.filter(owner=self.request.user).order_by('-updated_at')
+            queryset = Facture.objects.all()
+        else:
+            queryset = Facture.objects.filter(owner=self.request.user)
+            
+        client_id = self.request.query_params.get('client')
+        if client_id:
+            queryset = queryset.filter(client_id=client_id)
+            
+        return queryset.order_by('-updated_at')
 
     def perform_create(self, serializer):
         client = serializer.validated_data['client']

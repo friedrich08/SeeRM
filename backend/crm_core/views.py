@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.exceptions import PermissionDenied
 from .models import Client, Contact
 from .serializers import ClientSerializer, ContactSerializer
@@ -10,9 +10,14 @@ class ClientViewSet(viewsets.ModelViewSet):
     permission_classes = [ClientsPermission]
 
     def get_queryset(self):
-        if self.request.user.role == 'ADMIN':
+        user = self.request.user
+        if user.role == 'ADMIN':
             return Client.objects.all().order_by('-updated_at')
-        return Client.objects.filter(owner=self.request.user).order_by('-updated_at')
+        if user.role == 'CLIENT':
+            if user.client_link:
+                return Client.objects.filter(id=user.client_link.id)
+            return Client.objects.none()
+        return Client.objects.filter(owner=user).order_by('-updated_at')
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -23,9 +28,14 @@ class ContactViewSet(viewsets.ModelViewSet):
     permission_classes = [ClientsPermission]
 
     def get_queryset(self):
-        if self.request.user.role == 'ADMIN':
+        user = self.request.user
+        if user.role == 'ADMIN':
             return Contact.objects.all().order_by('-created_at')
-        return Contact.objects.filter(client__owner=self.request.user).order_by('-created_at')
+        if user.role == 'CLIENT':
+            if user.client_link:
+                return Contact.objects.filter(client=user.client_link).order_by('-created_at')
+            return Contact.objects.none()
+        return Contact.objects.filter(client__owner=user).order_by('-created_at')
 
     def perform_create(self, serializer):
         client = serializer.validated_data['client']

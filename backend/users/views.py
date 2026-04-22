@@ -83,6 +83,7 @@ class GoogleCallbackJWTView(APIView):
 
 class SystemStatusView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def get(self, request):
         google_configured, google_note = ensure_google_social_app()
@@ -118,9 +119,9 @@ class TestEmailView(APIView):
 
         try:
             sent_count = send_mail(
-                subject="Test email Relatel CRM",
-                message="Ceci est un test d'envoi email depuis la page Parametres.",
-                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@relatel.tg"),
+                subject="Test email SeeRM CRM",
+                message="Ceci est un test d'envoi email depuis la page Parametres SeeRM.",
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@seerm.tg"),
                 recipient_list=[to_email],
                 fail_silently=False,
             )

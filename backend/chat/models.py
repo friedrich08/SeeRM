@@ -24,3 +24,14 @@ class Message(models.Model):
     def __str__(self):
         sender_name = "Prospect" if self.is_from_prospect else (self.sender.email if self.sender else "Système")
         return f"{sender_name}: {self.content[:50]}"
+
+class Notification(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    link = models.CharField(max_length=255, blank=True, null=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']

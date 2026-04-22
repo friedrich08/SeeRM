@@ -40,8 +40,8 @@ interface FinanceStore {
   devis: Devis[];
   factures: Facture[];
   isLoading: boolean;
-  fetchDevis: () => Promise<void>;
-  fetchFactures: () => Promise<void>;
+  fetchDevis: (clientId?: number) => Promise<void>;
+  fetchFactures: (clientId?: number) => Promise<void>;
   createDevis: (payload: Partial<Devis>) => Promise<void>;
   createFacture: (payload: Partial<Facture>) => Promise<void>;
   downloadDevisPDF: (id: number, numero: string) => Promise<void>;
@@ -53,10 +53,11 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
   factures: [],
   isLoading: false,
 
-  fetchDevis: async () => {
+  fetchDevis: async (clientId) => {
     set({ isLoading: true });
     try {
-      const response = await api.get('/devis/');
+      const url = clientId ? `/devis/?client=${clientId}` : '/devis/';
+      const response = await api.get(url);
       set({ devis: response.data, isLoading: false });
     } catch (error) {
       console.error(error);
@@ -64,10 +65,11 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
     }
   },
 
-  fetchFactures: async () => {
+  fetchFactures: async (clientId) => {
     set({ isLoading: true });
     try {
-      const response = await api.get('/factures/');
+      const url = clientId ? `/factures/?client=${clientId}` : '/factures/';
+      const response = await api.get(url);
       set({ factures: response.data, isLoading: false });
     } catch (error) {
       console.error(error);

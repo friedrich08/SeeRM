@@ -40,7 +40,7 @@ export const ClientModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () 
               required
               type="text" 
               className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all outline-none"
-              placeholder="Ex: Relatel SAS"
+              placeholder="Ex: SeeRM SAS"
               value={formData.nom_societe}
               onChange={e => setFormData({...formData, nom_societe: e.target.value})}
             />

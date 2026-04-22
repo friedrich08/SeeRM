@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useClientStore } from '../store/useClientStore';
 import { ClientModal } from '../components/ui/ClientModal';
 import { useAuthStore } from '../store/useAuthStore';
@@ -15,6 +16,7 @@ import {
 const Clients = () => {
   const can = useAuthStore((state) => state.can);
   const canWriteClients = can('clients', 'write');
+  const navigate = useNavigate();
   const { clients, isLoading, fetchClients, deleteClient } = useClientStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,13 +88,13 @@ const Clients = () => {
               ) : filteredClients.length > 0 ? (
                 filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 cursor-pointer" onClick={() => navigate(`/clients/${client.id}`)}>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-colors">
                           <Building2 size={20} />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-brand-primary">{client.nom_societe}</p>
+                          <p className="text-sm font-bold text-brand-primary hover:underline">{client.nom_societe}</p>
                           <p className="text-xs text-gray-400">{client.adresse || 'Pas d\'adresse'}</p>
                         </div>
                       </div>
@@ -123,7 +125,10 @@ const Clients = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100 shadow-none hover:shadow-sm">
+                        <button 
+                          onClick={() => navigate(`/clients/${client.id}`)}
+                          className="p-2 text-gray-400 hover:text-brand-primary hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100 shadow-none hover:shadow-sm"
+                        >
                           <ExternalLink size={18} />
                         </button>
                         {canWriteClients && (

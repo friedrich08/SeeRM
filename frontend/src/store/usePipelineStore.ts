@@ -18,6 +18,7 @@ interface PipelineStore {
   isLoading: boolean;
   error: string | null;
   fetchOpportunities: () => Promise<void>;
+  fetchOpportunitiesByClient: (clientId: number) => Promise<void>;
   addOpportunity: (payload: Partial<Opportunity>) => Promise<void>;
   updateOpportunityStatus: (id: number, newStatus: string) => Promise<void>;
 }
@@ -31,6 +32,16 @@ export const usePipelineStore = create<PipelineStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await api.get('/opportunities/');
+      set({ opportunities: response.data, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+
+  fetchOpportunitiesByClient: async (clientId) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.get(`/opportunities/?client=${clientId}`);
       set({ opportunities: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });

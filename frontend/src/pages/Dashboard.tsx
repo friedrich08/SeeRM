@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { usePipelineStore } from '../store/usePipelineStore';
 import { Layout, TrendingUp, Users, Target, BarChart3, Calendar as CalendarIcon, List, Clock } from 'lucide-react';
@@ -45,7 +45,6 @@ const MetricCard = ({ title, value, subtext, icon: Icon, children }: any) => (
 const Dashboard = () => {
   const { stats, fetchStats, isLoading } = useDashboardStore();
   const { opportunities, fetchOpportunities } = usePipelineStore();
-  const [activeTab, setActiveTab] = useState<'spreadsheet' | 'board' | 'calendar' | 'timeline'>('spreadsheet');
 
   useEffect(() => {
     fetchStats();
@@ -134,104 +133,17 @@ const Dashboard = () => {
         </MetricCard>
       </div>
 
-      <div className="flex gap-8 border-b border-gray-100 mb-8">
-        {[
-            { id: 'spreadsheet', label: 'Spreadsheet', icon: List },
-            { id: 'board', label: 'Board', icon: Layout },
-            { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
-            { id: 'timeline', label: 'Timeline', icon: Clock },
-        ].map((tab) => (
-            <button 
-                key={tab.id} 
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`pb-4 text-[13px] font-bold transition-all flex items-center gap-2 relative ${activeTab === tab.id ? 'text-brand-primary' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-                <tab.icon size={14} />
-                {tab.label}
-                {activeTab === tab.id && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-primary" />}
-            </button>
-        ))}
-      </div>
-
-      <div className="min-h-[400px]">
-        {activeTab === 'spreadsheet' && (
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                            <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400">Opportunite</th>
-                            <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400">Client</th>
-                            <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400">Montant</th>
-                            <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400">Statut</th>
-                            <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400">Priorite</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {opportunities.map(opt => (
-                            <tr key={opt.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4 text-sm font-bold text-brand-primary">{opt.titre}</td>
-                                <td className="px-6 py-4 text-sm text-gray-500">{opt.client_detail?.nom_societe}</td>
-                                <td className="px-6 py-4 text-sm font-bold">{formatXOF(opt.montant_estime)}</td>
-                                <td className="px-6 py-4">
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 uppercase">
-                                        {opt.statut}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                                        opt.priorite === 'HIGH' ? 'bg-red-50 text-red-600' : 
-                                        opt.priorite === 'NORMAL' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'
-                                    }`}>
-                                        {opt.priorite}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        )}
-
-        {activeTab === 'board' && <Kanban hideHeader />}
-
-        {activeTab === 'calendar' && (
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center">
-                <CalendarIcon size={48} className="mx-auto text-gray-200 mb-4" />
-                <h3 className="text-lg font-bold text-brand-primary mb-2">Calendrier des echeances</h3>
-                <div className="grid grid-cols-7 gap-2 max-w-2xl mx-auto mt-6">
-                    {Array.from({ length: 31 }).map((_, i) => (
-                        <div key={i} className="aspect-square border border-gray-100 rounded-lg flex items-center justify-center text-xs font-bold text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
-                            {i + 1}
-                            {opportunities.some(o => o.date_echeance && new Date(o.date_echeance).getDate() === i + 1) && (
-                                <div className="absolute w-1 h-1 bg-indigo-500 rounded-full translate-y-3"></div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-
-        {activeTab === 'timeline' && (
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-                <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
-                    {opportunities.slice(0, 5).map((opt, i) => (
-                        <div key={i} className="flex gap-6 relative">
-                            <div className="w-6 h-6 rounded-full bg-white border-4 border-indigo-500 z-10 shadow-sm" />
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase mb-1">
-                                    {opt.date_echeance ? new Date(opt.date_echeance).toLocaleDateString('fr-FR') : 'Sans date'}
-                                </p>
-                                <h4 className="font-bold text-brand-primary">{opt.titre}</h4>
-                                <p className="text-sm text-gray-500">{opt.client_detail?.nom_societe} - {formatXOF(opt.montant_estime)}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-brand-primary mb-6 flex items-center gap-2">
+            <KanbanIcon size={20} className="text-brand-accent" />
+            Vue Pipeline (Board)
+        </h2>
+        <Kanban hideHeader />
       </div>
     </div>
   );
 };
+
+const KanbanIcon = Layout;
 
 export default Dashboard;

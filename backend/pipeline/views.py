@@ -18,6 +18,11 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         statut = self.request.query_params.get('statut')
         if statut:
             queryset = queryset.filter(statut=statut)
+            
+        client_id = self.request.query_params.get('client')
+        if client_id:
+            queryset = queryset.filter(client_id=client_id)
+            
         return queryset.order_by('-updated_at')
 
     def perform_create(self, serializer):
