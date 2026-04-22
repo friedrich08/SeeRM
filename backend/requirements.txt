@@ -1,0 +1,13 @@
+django
+daphne
+django-cors-headers
+djangorestframework
+django-filter
+django-allauth
+djangorestframework-simplejwt
+python-dotenv
+dj-database-url
+psycopg2-binary
+whitenoise
+gunicorn
+requests
