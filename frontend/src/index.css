@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #08060d;
+  --color-brand-secondary: #6b7280;
+  --color-brand-accent: #6366f1;
+  --color-bg-sidebar: #f9fafb;
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-sans text-[#08060d] bg-white antialiased;
+  }
+}
+
+/* Microdose Components */
+.micro-card {
+  @apply bg-white border border-gray-100 rounded-2xl shadow-sm transition-all duration-300;
+}
+
+.micro-card:hover {
+  @apply shadow-md border-gray-200;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 rounded-full;
+}

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Devis {{ devis.numero }}</title>
+    <style>
+        @page {
+            margin: 2cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 50px;
+        }
+        .company-info h1 {
+            color: #08060d;
+            margin: 0;
+            font-size: 28px;
+        }
+        .document-title {
+            text-align: right;
+        }
+        .document-title h2 {
+            margin: 0;
+            color: #aa3bff;
+            font-size: 24px;
+        }
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        .info-col {
+            display: table-cell;
+            width: 50%;
+        }
+        .client-box {
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f9fafb;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th {
+            background-color: #08060d;
+            color: white;
+            text-align: left;
+            padding: 12px;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .totals {
+            margin-left: auto;
+            width: 300px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .total-final {
+            font-weight: bold;
+            font-size: 18px;
+            border-top: 2px solid #08060d;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            <h1>RELATEL</h1>
+            <p>123 Avenue du Futur<br>75000 Paris, France<br>SIRET: 123 456 789 00012</p>
+        </div>
+        <div class="document-title">
+            <h2>DEVIS</h2>
+            <p>N° {{ devis.numero }}<br>Date: {{ devis.date_emission|date:"d/m/Y" }}</p>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-col">
+            <strong>Émetteur:</strong>
+            <p>Relatel CRM Service<br>Email: billing@relatel.fr</p>
+        </div>
+        <div class="info-col">
+            <div class="client-box">
+                <strong>Destinataire:</strong>
+                <p>{{ devis.client.nom_societe }}<br>
+                {{ devis.client.adresse|linebreaksbr }}<br>
+                Email: {{ devis.client.email_principal }}</p>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Désignation</th>
+                <th>Prix Unitaire HT</th>
+                <th>Qté</th>
+                <th>Total HT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in devis.lignes.all %}
+            <tr>
+                <td>{{ ligne.designation }}</td>
+                <td>{{ ligne.prix_unitaire }} €</td>
+                <td>{{ ligne.quantite }}</td>
+                <td>{{ ligne.total_ligne }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="total-row">
+            <span>Total HT:</span>
+            <span>{{ devis.total_ht }} €</span>
+        </div>
+        <div class="total-row">
+            <span>TVA (20%):</span>
+            <span>{{ devis.total_ttc|floatformat:2|add:devis.total_ht|floatformat:2 }} €</span> <!-- Simplification for display -->
+        </div>
+        <div class="total-row total-final">
+            <span>TOTAL TTC:</span>
+            <span>{{ devis.total_ttc }} €</span>
+        </div>
+    </div>
+
+    {% if devis.notes %}
+    <div style="margin-top: 40px;">
+        <strong>Notes:</strong>
+        <p>{{ devis.notes }}</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        Relatel CRM - SAS au capital de 10 000 € - RCS Paris 123 456 789<br>
+        Conditions de paiement: Paiement à réception.
+    </div>
+</body>
+</html>
