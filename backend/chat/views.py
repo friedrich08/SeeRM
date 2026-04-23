@@ -3,6 +3,7 @@ from rest_framework.exceptions import PermissionDenied
 from .models import Conversation, Message, Notification
 from crm_core.serializers import ClientSerializer
 from users.permissions import ChatPermission
+from users.models import CustomUser
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,6 +41,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
             if user.client_link:
                 return Conversation.objects.filter(client=user.client_link).order_by('-updated_at')
             return Conversation.objects.none()
+        if user.role == 'ADMIN':
+            return Conversation.objects.all().order_by('-updated_at')
         return Conversation.objects.filter(participants=user).distinct().order_by('-updated_at')
 
     def perform_create(self, serializer):
@@ -51,9 +54,15 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("Vous ne pouvez pas créer de conversation pour un autre client.")
         elif client.owner_id != user.id and user.role != 'ADMIN':
             raise PermissionDenied("Conversation non autorisee pour ce client.")
-            
-        conversation = serializer.save()
-        conversation.participants.add(user)
-        # If it's the client creating it, ensure the owner is also a participant so they see it
-        if user.role == 'CLIENT' and client.owner:
-            conversation.participants.add(client.owner)
+
+        conversation = Conversation.objects.filter(client=client).order_by('-updated_at').first()
+        if conversation is None:
+            conversation = serializer.save()
+        else:
+            serializer.instance = conversation
+
+        participants_to_add = [user]
+        if client.owner:
+            participants_to_add.append(client.owner)
+        participants_to_add.extend(CustomUser.objects.filter(role='ADMIN'))
+        conversation.participants.add(*{participant for participant in participants_to_add if participant})

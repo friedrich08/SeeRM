@@ -106,6 +106,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def user_can_access_conversation(self, conversation_id, user_id):
+        user_model = get_user_model()
+        user = user_model.objects.filter(id=user_id).first()
+        if user and user.role == 'ADMIN':
+            return Conversation.objects.filter(id=conversation_id).exists()
         return Conversation.objects.filter(id=conversation_id, participants__id=user_id).exists()
 
     @database_sync_to_async

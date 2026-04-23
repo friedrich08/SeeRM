@@ -40,9 +40,8 @@ export const KanbanColumn = ({ id, title, items }: any) => {
           ))}
         </SortableContext>
         
-        {/* Drop zone placeholder effect */}
         <div className="h-20 border-2 border-dashed border-gray-100 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-            <span className="text-xs text-gray-300 font-bold tracking-widest uppercase">Drop here</span>
+            <span className="text-xs text-gray-300 font-bold tracking-widest uppercase">Deposer ici</span>
         </div>
       </div>
     </div>

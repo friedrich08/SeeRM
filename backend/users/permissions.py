@@ -3,7 +3,7 @@ from rest_framework.permissions import BasePermission
 
 MODULE_PERMISSIONS = {
     'clients': {
-        'read': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'SUPPORT'},
+        'read': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'SUPPORT', 'CLIENT'},
         'write': {'ADMIN', 'MANAGER', 'SALES'},
     },
     'pipeline': {
@@ -11,12 +11,12 @@ MODULE_PERMISSIONS = {
         'write': {'ADMIN', 'MANAGER', 'SALES'},
     },
     'finance': {
-        'read': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE'},
+        'read': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'CLIENT'},
         'write': {'ADMIN', 'FINANCE'},
     },
     'chat': {
-        'read': {'ADMIN', 'MANAGER', 'SALES', 'SUPPORT'},
-        'write': {'ADMIN', 'MANAGER', 'SALES', 'SUPPORT'},
+        'read': {'ADMIN', 'MANAGER', 'SALES', 'SUPPORT', 'CLIENT'},
+        'write': {'ADMIN', 'MANAGER', 'SALES', 'SUPPORT', 'CLIENT'},
     },
     'system': {
         'read': {'ADMIN', 'MANAGER'},

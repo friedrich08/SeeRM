@@ -1,9 +1,16 @@
 import { useEffect, useState, type FormEvent, useMemo } from 'react';
-import { useFinanceStore } from '../store/useFinanceStore';
-import { FileText, Download, Plus, FileSearch, Receipt, Search } from 'lucide-react';
+import { useFinanceStore, type LigneArticle } from '../store/useFinanceStore';
+import { Download, Plus, FileSearch, Search, Trash2 } from 'lucide-react';
 import { formatXOF } from '../lib/currency';
 import api from '../lib/api';
 import { useAuthStore } from '../store/useAuthStore';
+
+const createEmptyLine = (): LigneArticle => ({
+  designation: '',
+  prix_unitaire: 0,
+  quantite: 1,
+  tva_taux: 0,
+});
 
 const DevisList = () => {
   const can = useAuthStore((state) => state.can);
@@ -24,12 +31,14 @@ const DevisList = () => {
   const [clients, setClients] = useState<Array<{ id: number; nom_societe: string }>>([]);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [submitError, setSubmitError] = useState('');
   
   const [form, setForm] = useState({
     client: '',
     statut: 'BROUILLON',
     notes: '',
     date_echeance: '',
+    lignes: [createEmptyLine()] as LigneArticle[],
   });
 
   useEffect(() => {
@@ -48,22 +57,84 @@ const DevisList = () => {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    setSubmitError('');
+
+    const lignes = form.lignes
+      .map((ligne) => ({
+        designation: ligne.designation.trim(),
+        quantite: Number(ligne.quantite || 0),
+        prix_unitaire: Number(ligne.prix_unitaire || 0),
+        tva_taux: Number(ligne.tva_taux || 0),
+      }))
+      .filter((ligne) => ligne.designation || ligne.prix_unitaire > 0);
+
+    if (lignes.length === 0) {
+      setSubmitError('Ajoutez au moins une ligne avec un prix.');
+      return;
+    }
+
+    if (lignes.some((ligne) => !ligne.designation || ligne.quantite <= 0 || ligne.prix_unitaire < 0)) {
+      setSubmitError('Chaque ligne doit avoir une designation, une quantite valide et un prix.');
+      return;
+    }
+
     const payload = {
       client: Number(form.client),
       statut: form.statut,
       notes: form.notes,
       date_echeance: form.date_echeance || undefined,
+      lignes,
     };
 
-    if (activeTab === 'devis') {
-      await createDevis(payload);
-    } else {
-      await createFacture(payload);
+    try {
+      if (activeTab === 'devis') {
+        await createDevis(payload);
+      } else {
+        await createFacture(payload);
+      }
+    } catch {
+      setSubmitError("La creation du document a echoue. Verifiez les champs saisis.");
+      return;
     }
 
-    setForm({ client: '', statut: 'BROUILLON', notes: '', date_echeance: '' });
+    setForm({ client: '', statut: 'BROUILLON', notes: '', date_echeance: '', lignes: [createEmptyLine()] });
     setShowForm(false);
   };
+
+  const updateLine = (index: number, field: keyof LigneArticle, value: string) => {
+    setForm((current) => ({
+      ...current,
+      lignes: current.lignes.map((ligne, lineIndex) =>
+        lineIndex === index
+          ? {
+              ...ligne,
+              [field]: field === 'designation' ? value : Number(value),
+            }
+          : ligne
+      ),
+    }));
+  };
+
+  const addLine = () => {
+    setForm((current) => ({
+      ...current,
+      lignes: [...current.lignes, createEmptyLine()],
+    }));
+  };
+
+  const removeLine = (index: number) => {
+    setForm((current) => ({
+      ...current,
+      lignes: current.lignes.length === 1
+        ? [createEmptyLine()]
+        : current.lignes.filter((_, lineIndex) => lineIndex !== index),
+    }));
+  };
+
+  const totalPreview = form.lignes.reduce(
+    (sum, ligne) => sum + Number(ligne.quantite || 0) * Number(ligne.prix_unitaire || 0),
+    0
+  );
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -162,6 +233,94 @@ const DevisList = () => {
               />
             </div>
           </div>
+          <div className="mt-6 rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-bg-light border-b border-gray-200">
+              <div>
+                <p className="text-sm font-bold text-brand-primary">Lignes d'articles</p>
+                <p className="text-xs text-gray-500">Saisissez le prix unitaire pour calculer le montant du document.</p>
+              </div>
+              <button
+                type="button"
+                onClick={addLine}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-bold text-brand-primary bg-white border border-brand-primary/20 rounded-xl"
+              >
+                <Plus size={16} />
+                Ajouter une ligne
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-brand-secondary">Designation</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-brand-secondary">Quantite</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-brand-secondary">Prix unitaire</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-brand-secondary">Montant</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-brand-secondary text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {form.lignes.map((ligne, index) => {
+                    const montantLigne = Number(ligne.quantite || 0) * Number(ligne.prix_unitaire || 0);
+
+                    return (
+                      <tr key={index}>
+                        <td className="px-4 py-3">
+                          <input
+                            required
+                            type="text"
+                            value={ligne.designation}
+                            onChange={(e) => updateLine(index, 'designation', e.target.value)}
+                            placeholder="Ex: Maintenance mensuelle"
+                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-primary/10"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            required
+                            min="1"
+                            type="number"
+                            value={ligne.quantite}
+                            onChange={(e) => updateLine(index, 'quantite', e.target.value)}
+                            className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-primary/10"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            required
+                            min="0"
+                            step="0.01"
+                            type="number"
+                            value={ligne.prix_unitaire}
+                            onChange={(e) => updateLine(index, 'prix_unitaire', e.target.value)}
+                            className="w-36 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-primary/10"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm font-bold text-brand-primary">{formatXOF(montantLigne)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => removeLine(index)}
+                            className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Supprimer la ligne"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 bg-bg-light border-t border-gray-200">
+              <span className="text-sm text-gray-500">Total HT estime</span>
+              <span className="text-lg font-bold text-brand-primary">{formatXOF(totalPreview)}</span>
+            </div>
+          </div>
+          {submitError && (
+            <p className="mt-4 text-sm font-medium text-red-600">{submitError}</p>
+          )}
           <div className="mt-4 flex justify-end gap-3">
              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-bold text-gray-400">Annuler</button>
              <button type="submit" className="bg-brand-primary text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-brand-primary/20">

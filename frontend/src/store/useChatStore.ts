@@ -21,7 +21,7 @@ interface ChatStore {
   isLoading: boolean;
   fetchConversations: () => Promise<void>;
   setActiveConversation: (id: number) => void;
-  addMessageToActive: (message: Message) => void;
+  addMessageToConversation: (conversationId: number, message: Message) => void;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -46,17 +46,36 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     set({ activeConversation: conv });
   },
 
-  addMessageToActive: (message) => {
-    const active = get().activeConversation;
-    if (active) {
-      const updatedActive = {
-        ...active,
-        messages: [...active.messages, message]
-      };
-      set({ 
-        activeConversation: updatedActive,
-        conversations: get().conversations.map(c => c.id === active.id ? updatedActive : c)
-      });
+  addMessageToConversation: (conversationId, message) => {
+    const conversations = get().conversations;
+    const target = conversations.find((conversation) => conversation.id === conversationId);
+    if (!target) {
+      return;
     }
-  }
+
+    const lastMessage = target.messages[target.messages.length - 1];
+    const isDuplicate =
+      !!lastMessage &&
+      lastMessage.content === message.content &&
+      lastMessage.is_from_prospect === message.is_from_prospect &&
+      lastMessage.sender_id === message.sender_id;
+
+    if (isDuplicate) {
+      return;
+    }
+
+    const updatedConversation = {
+      ...target,
+      messages: [...target.messages, message],
+    };
+    const reordered = [
+      updatedConversation,
+      ...conversations.filter((conversation) => conversation.id !== conversationId),
+    ];
+
+    set({
+      conversations: reordered,
+      activeConversation: get().activeConversation?.id === conversationId ? updatedConversation : get().activeConversation,
+    });
+  },
 }));

@@ -16,7 +16,7 @@ class DashboardStatsView(APIView):
         user = request.user
         
         # Base Querysets
-        if user.role == 'ADMIN':
+        if user.role in ('ADMIN', 'FINANCE'):
             clients = Client.objects.all()
             opps = Opportunity.objects.all()
             devis = Devis.objects.all()

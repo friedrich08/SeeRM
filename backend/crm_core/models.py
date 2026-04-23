@@ -30,3 +30,16 @@ class Contact(models.Model):
 
     def __str__(self):
         return f"{self.prenom} {self.nom} ({self.client.nom_societe})"
+
+
+class ClientNote(models.Model):
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='notes')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='client_notes')
+    content = models.TextField('note interne')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Note interne - {self.client.nom_societe}"

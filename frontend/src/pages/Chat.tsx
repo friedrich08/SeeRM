@@ -3,41 +3,79 @@ import { Send, User, Search, Paperclip, MoreVertical, MessageSquare } from 'luci
 import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { API_BASE_URL } from '../lib/api';
+import { useSearchParams } from 'react-router-dom';
 
 const Chat = () => {
   const { user, can } = useAuthStore();
   const canWriteChat = can('chat', 'write');
-  const { activeConversation, conversations, fetchConversations, setActiveConversation, addMessageToActive } = useChatStore();
+  const { activeConversation, conversations, fetchConversations, setActiveConversation, addMessageToConversation } = useChatStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [input, setInput] = useState('');
-  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const socketsRef = useRef<Record<number, WebSocket>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const conversationIds = conversations.map((conversation) => conversation.id).join(',');
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
 
   useEffect(() => {
-    if (!activeConversation) return;
+    const conversationId = Number(searchParams.get('conversation'));
+    if (!conversationId || conversations.length === 0) {
+      return;
+    }
+    if (conversations.some((conversation) => conversation.id === conversationId)) {
+      setActiveConversation(conversationId);
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('conversation');
+        return next;
+      }, { replace: true });
+    }
+  }, [conversations, searchParams, setActiveConversation, setSearchParams]);
+
+  useEffect(() => {
     const token = localStorage.getItem('token');
+    if (!token || conversations.length === 0) return;
     const backendBase = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
     const wsProtocol = backendBase.startsWith('https') ? 'wss' : 'ws';
     const host = backendBase.replace(/^https?:\/\//, '');
-    const wsUrl = `${wsProtocol}://${host}/ws/chat/${activeConversation.id}/?token=${encodeURIComponent(token || '')}`;
-    const ws = new WebSocket(wsUrl);
+    const knownSockets = socketsRef.current;
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      addMessageToActive({
-        content: data.message,
-        is_from_prospect: data.is_from_prospect,
-        timestamp: new Date().toISOString(),
-        sender_id: data.sender_id,
-      });
+    conversations.forEach((conversation) => {
+      if (knownSockets[conversation.id]) {
+        return;
+      }
+      const wsUrl = `${wsProtocol}://${host}/ws/chat/${conversation.id}/?token=${encodeURIComponent(token)}`;
+      const socket = new WebSocket(wsUrl);
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        addMessageToConversation(conversation.id, {
+          content: data.message,
+          is_from_prospect: data.is_from_prospect,
+          timestamp: new Date().toISOString(),
+          sender_id: data.sender_id,
+        });
+      };
+      socket.onclose = () => {
+        delete socketsRef.current[conversation.id];
+      };
+      knownSockets[conversation.id] = socket;
+    });
+
+    Object.keys(knownSockets).forEach((key) => {
+      const conversationId = Number(key);
+      if (!conversations.some((conversation) => conversation.id === conversationId)) {
+        knownSockets[conversationId]?.close();
+        delete knownSockets[conversationId];
+      }
+    });
+
+    return () => {
+      Object.values(socketsRef.current).forEach((socket) => socket.close());
+      socketsRef.current = {};
     };
-
-    setSocket(ws);
-    return () => ws.close();
-  }, [activeConversation, addMessageToActive]);
+  }, [conversationIds, addMessageToConversation]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -46,7 +84,9 @@ const Chat = () => {
   }, [activeConversation?.messages]);
 
   const sendMessage = () => {
-    if (!canWriteChat || !socket || !input.trim() || !activeConversation) return;
+    if (!canWriteChat || !input.trim() || !activeConversation) return;
+    const socket = socketsRef.current[activeConversation.id];
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
     socket.send(
       JSON.stringify({
         message: input,
@@ -61,7 +101,7 @@ const Chat = () => {
     <div className="h-[calc(100vh-120px)] flex bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="w-80 border-r border-gray-100 flex flex-col bg-bg-light/50">
         <div className="p-6 border-b border-gray-100 bg-white">
-          <h2 className="text-xl font-bold mb-4">Messages</h2>
+          <h2 className="text-xl font-bold mb-4">Conversations</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
@@ -100,7 +140,7 @@ const Chat = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-brand-primary">{activeConversation.client_detail.nom_societe}</h3>
-                  <p className="text-xs text-green-500 font-medium">En ligne</p>
+                  <p className="text-xs text-green-500 font-medium">Conversation active</p>
                 </div>
               </div>
               <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
@@ -154,7 +194,7 @@ const Chat = () => {
             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
               <MessageSquare size={40} className="text-gray-200" />
             </div>
-            <h3 className="text-lg font-bold text-brand-primary mb-2">Vos Conversations</h3>
+            <h3 className="text-lg font-bold text-brand-primary mb-2">Vos conversations</h3>
             <p className="text-center max-w-xs text-sm">Selectionnez un client dans la liste pour commencer a discuter en temps reel.</p>
           </div>
         )}

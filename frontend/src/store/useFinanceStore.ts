@@ -5,6 +5,7 @@ export interface LigneArticle {
   designation: string;
   prix_unitaire: number;
   quantite: number;
+  tva_taux?: number;
 }
 
 export interface Devis {
@@ -44,6 +45,7 @@ interface FinanceStore {
   fetchFactures: (clientId?: number) => Promise<void>;
   createDevis: (payload: Partial<Devis>) => Promise<void>;
   createFacture: (payload: Partial<Facture>) => Promise<void>;
+  acceptDevis: (id: number) => Promise<void>;
   downloadDevisPDF: (id: number, numero: string) => Promise<void>;
   downloadFacturePDF: (id: number, numero: string) => Promise<void>;
 }
@@ -83,6 +85,7 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
       set((state) => ({ devis: [response.data, ...state.devis] }));
     } catch (error) {
       console.error(error);
+      throw error;
     }
   },
 
@@ -92,6 +95,19 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
       set((state) => ({ factures: [response.data, ...state.factures] }));
     } catch (error) {
       console.error(error);
+      throw error;
+    }
+  },
+
+  acceptDevis: async (id) => {
+    try {
+      const response = await api.post(`/devis/${id}/accept/`);
+      set((state) => ({
+        devis: state.devis.map((quote) => (quote.id === id ? response.data : quote)),
+      }));
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   },
 

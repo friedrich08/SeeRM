@@ -62,7 +62,7 @@ export const KanbanCard = ({ item, isOverlay }: any) => {
           <img
             src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${itemId}`}
             className="w-7 h-7 rounded-full border-2 border-white bg-gray-100"
-            alt="Avatar"
+            alt="Avatar client"
           />
           <div className="w-7 h-7 rounded-full border-2 border-white bg-gray-50 flex items-center justify-center text-[10px] font-bold text-gray-400">
             +1

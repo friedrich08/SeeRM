@@ -1,22 +1,36 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ExternalLink, Globe, LogIn, UserPlus } from 'lucide-react';
+import { ExternalLink, Globe, LogIn, ShieldCheck, UserCircle2 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import api, { API_BASE_URL } from '../lib/api';
 import { Logo } from '../components/ui/Logo';
 
+const STAFF_ACCOUNTS = [
+  { label: 'Commercial', email: 'sales@relatel.tg', password: 'Relatel@123' },
+  { label: 'Finance', email: 'finance@relatel.tg', password: 'Relatel@123' },
+  { label: 'Support', email: 'support@relatel.tg', password: 'Relatel@123' },
+  { label: 'Manager', email: 'manager@relatel.tg', password: 'Relatel@123' },
+  { label: 'Operations', email: 'ops@relatel.tg', password: 'Relatel@123' },
+];
+
+const CLIENT_ACCOUNTS = [
+  { label: 'CEET', email: 'client.ceet@relatel.tg', password: 'Client@123' },
+  { label: 'LBS', email: 'client.lbs@relatel.tg', password: 'Client@123' },
+  { label: 'Cannalbox', email: 'client.cannalbox@relatel.tg', password: 'Client@123' },
+  { label: 'Ecobank', email: 'client.ecobank@relatel.tg', password: 'Client@123' },
+  { label: 'Yas Togo', email: 'client.yas@relatel.tg', password: 'Client@123' },
+  { label: 'TDS', email: 'client.tds@relatel.tg', password: 'Client@123' },
+  { label: 'TVT', email: 'client.tvt@relatel.tg', password: 'Client@123' },
+  { label: 'Multinationale Friedrich D.', email: 'client.friedrich@relatel.tg', password: 'Client@123' },
+];
+
 const Auth = () => {
-  const { isAuthenticated, isLoading, error, login, register, completeSocialAuth } = useAuthStore();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const { isAuthenticated, isLoading, error, login, completeSocialAuth } = useAuthStore();
+  const [mode, setMode] = useState<'login' | 'directory'>('login');
   const [googleStatus, setGoogleStatus] = useState<{ configured?: boolean; login_url?: string; note?: string }>({});
   const [googleInfo, setGoogleInfo] = useState('');
+  const [isHandlingSocialAuth, setIsHandlingSocialAuth] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    password: '',
-  });
   const backendBase = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
 
   useEffect(() => {
@@ -35,13 +49,18 @@ const Auth = () => {
       setGoogleInfo('La connexion Google a echoue.');
     }
     if (access && refresh) {
-      completeSocialAuth(access, refresh).then(() => {
-        window.history.replaceState({}, document.title, '/auth');
-      });
+      setIsHandlingSocialAuth(true);
+      completeSocialAuth(access, refresh)
+        .then(() => {
+          window.history.replaceState({}, document.title, '/auth');
+        })
+        .finally(() => {
+          setIsHandlingSocialAuth(false);
+        });
     }
   }, [completeSocialAuth]);
 
-  if (isAuthenticated) {
+  if (!isHandlingSocialAuth && isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
@@ -50,9 +69,9 @@ const Auth = () => {
     await login(loginForm.email, loginForm.password);
   };
 
-  const submitRegister = async (event: FormEvent) => {
-    event.preventDefault();
-    await register(registerForm);
+  const useDemoAccount = (email: string, password: string) => {
+    setMode('login');
+    setLoginForm({ email, password });
   };
 
   return (
@@ -65,15 +84,15 @@ const Auth = () => {
           <div className="relative z-10">
             <Logo size="lg" />
             <div className="mt-12">
-                <h2 className="text-4xl font-bold mb-4 tracking-tight">The future of CRM is here.</h2>
+                <h2 className="text-4xl font-bold mb-4 tracking-tight">Le CRM terrain, pense pour l'execution.</h2>
                 <p className="text-gray-400 text-lg leading-relaxed">
-                SeeRM provides a premium experience for modern enterprises, focusing on speed and design.
+                SeeRM centralise vos clients, votre pipeline, vos finances et vos echanges dans une interface unique.
                 </p>
             </div>
           </div>
           <div className="relative z-10 text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            System Operational
+            Systeme operationnel
           </div>
         </div>
 
@@ -86,10 +105,10 @@ const Auth = () => {
               Connexion
             </button>
             <button
-              onClick={() => setMode('register')}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'register' ? 'bg-white shadow-sm text-[#0b0f17] border border-gray-100' : 'text-gray-400'}`}
+              onClick={() => setMode('directory')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'directory' ? 'bg-white shadow-sm text-[#0b0f17] border border-gray-100' : 'text-gray-400'}`}
             >
-              Inscription
+              Acces demo
             </button>
           </div>
 
@@ -123,52 +142,73 @@ const Auth = () => {
               </button>
             </form>
           ) : (
-            <form onSubmit={submitRegister} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Prenom</label>
-                    <input
-                        value={registerForm.first_name}
-                        onChange={(e) => setRegisterForm({ ...registerForm, first_name: e.target.value })}
-                        className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all bg-gray-50/50 focus:bg-white"
-                    />
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Admins</p>
+                <p className="mt-2 text-sm text-amber-900">
+                  Les comptes administrateur existent, mais leurs mots de passe ne sont pas affiches ici.
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck size={16} className="text-[#0b0f17]" />
+                  <h3 className="text-sm font-bold text-[#0b0f17]">Comptes staff</h3>
                 </div>
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nom</label>
-                    <input
-                        value={registerForm.last_name}
-                        onChange={(e) => setRegisterForm({ ...registerForm, last_name: e.target.value })}
-                        className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all bg-gray-50/50 focus:bg-white"
-                    />
+                <div className="space-y-3">
+                  {STAFF_ACCOUNTS.map((account) => (
+                    <button
+                      key={account.email}
+                      type="button"
+                      onClick={() => useDemoAccount(account.email, account.password)}
+                      className="w-full rounded-2xl border border-gray-200 bg-gray-50/70 p-4 text-left hover:bg-white hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-bold text-[#0b0f17]">{account.label}</p>
+                          <p className="text-xs text-gray-500 mt-1">{account.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Mot de passe</p>
+                          <p className="text-xs font-mono text-[#0b0f17]">{account.password}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email</label>
-                <input
-                    type="email"
-                    required
-                    value={registerForm.email}
-                    onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all bg-gray-50/50 focus:bg-white"
-                />
+
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <UserCircle2 size={16} className="text-[#0b0f17]" />
+                  <h3 className="text-sm font-bold text-[#0b0f17]">Comptes client</h3>
+                </div>
+                <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                  {CLIENT_ACCOUNTS.map((account) => (
+                    <button
+                      key={account.email}
+                      type="button"
+                      onClick={() => useDemoAccount(account.email, account.password)}
+                      className="w-full rounded-2xl border border-gray-200 bg-gray-50/70 p-4 text-left hover:bg-white hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-bold text-[#0b0f17]">{account.label}</p>
+                          <p className="text-xs text-gray-500 mt-1">{account.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Mot de passe</p>
+                          <p className="text-xs font-mono text-[#0b0f17]">{account.password}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Mot de passe</label>
-                <input
-                    type="password"
-                    required
-                    value={registerForm.password}
-                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all bg-gray-50/50 focus:bg-white"
-                />
-              </div>
-              <button disabled={isLoading} className="w-full bg-[#0b0f17] text-white py-4 rounded-2xl font-bold flex justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-gray-200">
-                <UserPlus size={18} />
-                Creer mon compte
-              </button>
-            </form>
+            </div>
           )}
 
+          {googleInfo && <p className="mt-4 text-sm text-amber-600">{googleInfo}</p>}
           {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           <div className="mt-8 border-t border-gray-100 pt-8">
             <a
@@ -180,7 +220,7 @@ const Auth = () => {
               <ExternalLink size={14} />
             </a>
             <p className="mt-4 text-center text-[10px] text-gray-400 uppercase tracking-widest font-bold">
-              Premium Enterprise CRM Solution
+              Plateforme CRM entreprise
             </p>
           </div>
         </div>

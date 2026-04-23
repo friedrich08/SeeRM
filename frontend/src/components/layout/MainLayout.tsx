@@ -32,7 +32,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
               </button>
               <button className="bg-brand-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
                 <Plus size={14} />
-                Creer une tache
+                Creer une action
               </button>
             </div>
           </div>

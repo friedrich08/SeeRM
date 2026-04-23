@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { usePipelineStore } from '../store/usePipelineStore';
-import { Layout, TrendingUp, Users, Target, BarChart3, Calendar as CalendarIcon, List, Clock } from 'lucide-react';
+import { Layout, TrendingUp, Users, Target, BarChart3 } from 'lucide-react';
 import { formatXOF } from '../lib/currency';
 import {
   Chart as ChartJS,
@@ -44,12 +43,10 @@ const MetricCard = ({ title, value, subtext, icon: Icon, children }: any) => (
 
 const Dashboard = () => {
   const { stats, fetchStats, isLoading } = useDashboardStore();
-  const { opportunities, fetchOpportunities } = usePipelineStore();
 
   useEffect(() => {
     fetchStats();
-    fetchOpportunities();
-  }, [fetchStats, fetchOpportunities]);
+  }, [fetchStats]);
 
   if (isLoading || !stats) {
     return (
@@ -62,7 +59,7 @@ const Dashboard = () => {
   const revenueData = {
     labels: stats.revenue_trend.map(d => d.month),
     datasets: [{
-      label: 'Revenu',
+      label: 'Revenus',
       data: stats.revenue_trend.map(d => d.revenue),
       borderColor: '#6366f1',
       backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -104,7 +101,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <MetricCard title="Revenu encaisse" value={formatXOF(stats.kpi.total_revenue)} icon={TrendingUp} subtext="Factures payees">
+        <MetricCard title="Revenus encaisses" value={formatXOF(stats.kpi.total_revenue)} icon={TrendingUp} subtext="Factures reglees">
             <Line data={revenueData} options={{ 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { legend: { display: false } },
@@ -112,7 +109,7 @@ const Dashboard = () => {
             }} />
         </MetricCard>
 
-        <MetricCard title="Valeur Pipeline" value={formatXOF(stats.kpi.pipeline_value)} icon={Target} subtext="Opportunites actives">
+        <MetricCard title="Valeur du pipeline" value={formatXOF(stats.kpi.pipeline_value)} icon={Target} subtext="Opportunites actives">
             <Bar data={oppData} options={{ 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { legend: { display: false } },
@@ -120,13 +117,13 @@ const Dashboard = () => {
             }} />
         </MetricCard>
 
-        <MetricCard title="Nouveaux Clients" value={stats.kpi.new_clients} icon={Users} subtext="Total clients & prospects">
+        <MetricCard title="Nouveaux clients" value={stats.kpi.new_clients} icon={Users} subtext="Total clients et prospects">
             <div className="flex items-center justify-center h-full">
                 <BarChart3 size={48} className="text-indigo-100" />
             </div>
         </MetricCard>
 
-        <MetricCard title="Taux Conversion" value={`${stats.kpi.conversion_rate}%`} icon={Layout} subtext="Opportunites gagnees">
+        <MetricCard title="Taux de conversion" value={`${stats.kpi.conversion_rate}%`} icon={Layout} subtext="Opportunites gagnees">
             <div className="w-full bg-gray-100 rounded-full h-2.5 mt-4">
                 <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${stats.kpi.conversion_rate}%` }}></div>
             </div>
@@ -136,7 +133,7 @@ const Dashboard = () => {
       <div className="mt-8">
         <h2 className="text-xl font-bold text-brand-primary mb-6 flex items-center gap-2">
             <KanbanIcon size={20} className="text-brand-accent" />
-            Vue Pipeline (Board)
+            Vue du pipeline
         </h2>
         <Kanban hideHeader />
       </div>

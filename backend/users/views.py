@@ -63,6 +63,7 @@ class MeView(APIView):
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "role": user.role,
+                "client_link": user.client_link_id,
                 "permissions": build_permissions_payload(user),
             }
         )

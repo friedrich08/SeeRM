@@ -22,7 +22,7 @@ const Settings = () => {
         setStatusError('');
       })
       .catch((error: any) => {
-        setStatusError(error?.response?.data?.detail || 'Impossible de charger le statut systeme.');
+        setStatusError(error?.response?.data?.detail || 'Impossible de charger le statut du systeme.');
       });
   }, []);
 
@@ -30,7 +30,7 @@ const Settings = () => {
     setEmailMessage('');
     try {
       const response = await api.post('/system/test-email/', { to_email: emailTo });
-      setEmailMessage(response.data?.detail || 'Email de test envoye.');
+      setEmailMessage(response.data?.detail || 'E-mail de test envoye.');
     } catch (error: any) {
       setEmailMessage(error?.response?.data?.detail || "Echec de l'envoi de l'email.");
     }
@@ -40,7 +40,7 @@ const Settings = () => {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-brand-primary mb-2">Parametres</h1>
-        <p className="text-gray-500 text-sm">Administration et configuration email.</p>
+        <p className="text-gray-500 text-sm">Administration generale et configuration e-mail.</p>
       </div>
 
       {statusError && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{statusError}</div>}
@@ -60,20 +60,20 @@ const Settings = () => {
             Ouvrir l'admin Django
             <ExternalLink size={14} />
           </a>
-          <p className="text-xs text-gray-400">Compte seed admin: admin@seerm.tg / Admin@12345</p>
+          <p className="text-xs text-gray-400">Compte de demonstration administrateur : admin@seerm.tg / Admin@12345</p>
         </div>
 
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
           <h2 className="font-bold text-brand-primary flex items-center gap-2">
             <Mail size={18} />
-            Email automatique
+            E-mails automatiques
           </h2>
           <p className="text-sm text-gray-500">
-            Etat: {status.email?.configured ? 'active' : 'incomplet'} ({status.email?.backend || 'backend inconnu'})
+            Etat : {status.email?.configured ? 'actif' : 'incomplet'} ({status.email?.backend || 'service inconnu'})
           </p>
           <input
             type="email"
-            placeholder="email destinataire"
+            placeholder="Adresse e-mail destinataire"
             value={emailTo}
             onChange={(e) => setEmailTo(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"

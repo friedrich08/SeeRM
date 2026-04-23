@@ -10,6 +10,15 @@ interface Contact {
   poste: string;
 }
 
+interface ClientNote {
+  id: number;
+  client: number;
+  content: string;
+  author?: number | null;
+  author_email?: string;
+  created_at: string;
+}
+
 interface Client {
   id: number;
   nom_societe: string;
@@ -19,6 +28,7 @@ interface Client {
   telephone: string;
   type_client: 'PROSPECT' | 'CLIENT';
   contacts?: Contact[];
+  notes?: ClientNote[];
 }
 
 interface ClientStore {

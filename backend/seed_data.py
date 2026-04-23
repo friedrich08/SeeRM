@@ -127,6 +127,29 @@ def populate() -> None:
                 )
             )
 
+        client_accounts = {
+            "CEET": "client.ceet@relatel.tg",
+            "Lome Business School (LBS)": "client.lbs@relatel.tg",
+            "Cannalbox": "client.cannalbox@relatel.tg",
+            "Ecobank": "client.ecobank@relatel.tg",
+            "Yas Togo": "client.yas@relatel.tg",
+            "Togo Digital Services": "client.tds@relatel.tg",
+            "TVT (Television Togolaise)": "client.tvt@relatel.tg",
+        }
+        for client in clients:
+            email = client_accounts.get(client.nom_societe)
+            if not email:
+                continue
+            account = CustomUser.objects.create_user(
+                email=email,
+                password="Client@123",
+                first_name=client.nom_societe.split()[0][:30],
+                last_name="Client",
+                role="CLIENT",
+            )
+            account.client_link = client
+            account.save()
+
         contacts_payload = [
             (clients[0], "Komi", "Kangni", "komi.kangni@ceet.tg", "+228 90 01 02 03", "Directeur IT"),
             (clients[1], "Afi", "Adjevi", "afi.adjevi@lbs.tg", "+228 90 11 22 33", "Responsable partenariats"),
@@ -230,25 +253,77 @@ def populate() -> None:
                 tva_taux=Decimal("18.00"),
             )
 
-        conv_texts = [
-            ("Bonjour, ou en est le devis final CEET ?", "Nous vous l'envoyons cet apres-midi."),
-            ("Pouvez-vous confirmer les dates de formation LBS ?", "Oui, debut le 15 du mois prochain."),
-            ("Nous souhaitons renegocier la phase 2.", "D'accord, on ajuste le scope et le budget."),
-            ("Le comite Ecobank valide sous reserve juridique.", "Parfait, nous partageons les documents aujourd'hui."),
-            ("Yas demande un pilote plus court.", "On peut proposer un pilote sur 6 semaines."),
-            ("Pouvez-vous activer une astreinte weekend ?", "Oui, l'option est disponible dans l'avenant."),
-            ("Quel est le statut de l'audit TVT ?", "L'audit est en cours de finalisation."),
-        ]
-        for idx, client in enumerate(clients):
+        conversation_threads = {
+            "CEET": [
+                (True, "Bonjour, ou en est le devis final CEET ?"),
+                (False, "Nous finalisons les derniers ajustements reseau ce matin."),
+                (True, "Parfait. Nous voulons aussi une option de support etendu le soir."),
+                (False, "C'est note. Je vous ajoute une variante avec astreinte 18h-22h."),
+                (True, "Merci, il nous faudra aussi le planning de deploiement par site."),
+                (False, "Je vous partage un planning detaille avec les 5 sites prioritaires avant 16h."),
+            ],
+            "Lome Business School (LBS)": [
+                (True, "Pouvez-vous confirmer les dates de formation LBS ?"),
+                (False, "Oui, debut le 15 du mois prochain avec deux cohortes."),
+                (True, "Nous preferons concentrer les ateliers sur trois jours complets."),
+                (False, "Possible. Je passe le programme en format intensif et je vous renvoie le support."),
+                (True, "Ajoutez aussi une session pour l'equipe admissions."),
+                (False, "D'accord, je l'integre dans le planning revise."),
+            ],
+            "Cannalbox": [
+                (True, "Nous souhaitons renegocier la phase 2."),
+                (False, "D'accord, on ajuste le scope et le budget."),
+                (True, "Le comite prefere demarrer par deux sites pilotes au lieu de cinq."),
+                (False, "Bonne approche. Je reduis le lot initial et je recalcule le montant."),
+                (True, "Gardez quand meme l'option multi-sites dans le devis."),
+                (False, "Oui, je la laisse en variante dans la proposition commerciale."),
+            ],
+            "Ecobank": [
+                (True, "Le comite Ecobank valide sous reserve juridique."),
+                (False, "Parfait, nous partageons les documents aujourd'hui."),
+                (True, "L'equipe conformite veut revoir la clause de retention des donnees."),
+                (False, "Je fais passer un avenant avec la nouvelle clause cet apres-midi."),
+                (True, "Merci. On vise une signature avant vendredi."),
+                (False, "C'est jouable, je pousse le juridique de notre cote."),
+            ],
+            "Yas Togo": [
+                (True, "Yas demande un pilote plus court."),
+                (False, "On peut proposer un pilote sur 6 semaines."),
+                (True, "Il faut aussi limiter la premiere vague a l'equipe B2B Lome."),
+                (False, "Compris. Je segmente le pilote et je retire les agences regionales."),
+                (True, "Envoyez-nous la nouvelle version du planning aujourd'hui si possible."),
+                (False, "Je vous l'envoie avant 17h avec les jalons revus."),
+            ],
+            "Togo Digital Services": [
+                (True, "Pouvez-vous activer une astreinte weekend ?"),
+                (False, "Oui, l'option est disponible dans l'avenant."),
+                (True, "Nous voulons un point hebdomadaire de suivi avec vos operations."),
+                (False, "Je planifie un comite chaque mardi matin avec support et delivery."),
+                (True, "Tres bien. Ajoutez aussi un reporting mensuel sur les incidents."),
+                (False, "C'est prevu, avec SLA, volume et temps moyen de resolution."),
+            ],
+            "TVT (Television Togolaise)": [
+                (True, "Quel est le statut de l'audit TVT ?"),
+                (False, "L'audit est en cours de finalisation."),
+                (True, "La direction veut surtout la synthese des risques prioritaires."),
+                (False, "Nous aurons un executive summary avec les 10 points critiques."),
+                (True, "Ajoutez aussi les actions rapides a lancer sous 30 jours."),
+                (False, "Oui, elles seront separees entre quick wins et chantiers structurants."),
+            ],
+        }
+        for client in clients:
             conv = Conversation.objects.create(client=client)
-            conv.participants.add(client.owner, users[0])
-            Message.objects.create(conversation=conv, sender=None, content=conv_texts[idx][0], is_from_prospect=True)
-            Message.objects.create(
-                conversation=conv,
-                sender=users[(idx % (len(users) - 1)) + 1],
-                content=conv_texts[idx][1],
-                is_from_prospect=False,
-            )
+            conv.participants.add(client.owner, users[0], *CustomUser.objects.filter(role='ADMIN'))
+            linked_client_user = CustomUser.objects.filter(role='CLIENT', client_link=client).first()
+            if linked_client_user:
+                conv.participants.add(linked_client_user)
+            for is_from_prospect, content in conversation_threads.get(client.nom_societe, []):
+                Message.objects.create(
+                    conversation=conv,
+                    sender=None if is_from_prospect else client.owner,
+                    content=content,
+                    is_from_prospect=is_from_prospect,
+                )
 
     print("Done. Database populated with fresh demo data.")
     print("Admin user: admin@relatel.tg / Admin@12345")

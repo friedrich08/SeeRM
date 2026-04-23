@@ -1,11 +1,15 @@
 import os
-import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env', override=True)
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
@@ -81,11 +85,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'relatel_prj.wsgi.application'
 ASGI_APPLICATION = 'relatel_prj.asgi.application'
 
-DATABASES = {
-    'default': dj_database_url.config(
+if dj_database_url:
+    default_database = dj_database_url.config(
         default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
         conn_max_age=600
     )
+else:
+    default_database = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+
+DATABASES = {
+    'default': default_database
 }
 
 AUTH_PASSWORD_VALIDATORS = [
