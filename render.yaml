@@ -1,3 +1,9 @@
+databases:
+  - name: relatel-db
+    databaseName: relatel
+    user: relatel_user
+    plan: free
+
 services:
   # Backend Web Service
   - type: web
@@ -28,13 +34,7 @@ services:
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    publishPath: dist
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         value: "https://relatel-backend.onrender.com/api"
-
-databases:
-  - name: relatel-db
-    databaseName: relatel
-    user: relatel_user
-    plan: free
