@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { Layout, TrendingUp, Users, Target, BarChart3 } from 'lucide-react';
-import { formatXOF, formatCompactXOF } from '../lib/currency';
+import { formatCompactXOF } from '../lib/currency';
 import {
   Chart as ChartJS,
   CategoryScale,
