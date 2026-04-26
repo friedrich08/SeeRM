@@ -1,3 +1,4 @@
+python-bidi==0.4.2
 django
 daphne
 django-cors-headers
@@ -12,5 +13,4 @@ whitenoise
 gunicorn
 requests
 xhtml2pdf
-python-bidi<0.6.0
 reportlab

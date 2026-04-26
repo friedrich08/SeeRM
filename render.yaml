@@ -8,7 +8,7 @@ services:
     startCommand: daphne -b 0.0.0.0 -p $PORT relatel_prj.asgi:application
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11.10"
+        value: "3.10.15"
       - key: DATABASE_URL
         sync: false # Vous collerez l'URL de Neon.tech ici dans l'interface Render
       - key: SECRET_KEY
