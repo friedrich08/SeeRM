@@ -13,5 +13,3 @@ gunicorn
 requests
 xhtml2pdf
 reportlab
-arabic-reshaper
-python-bidi
