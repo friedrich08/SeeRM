@@ -1,22 +1,16 @@
-databases:
-  - name: relatel-db
-    databaseName: relatel
-    user: relatel_user
-    plan: free
-
 services:
   # Backend Web Service
   - type: web
     name: relatel-backend
     runtime: python
     rootDir: backend
-    buildCommand: ./build.sh
+    buildCommand: bash ./build.sh
     startCommand: daphne -b 0.0.0.0 -p $PORT relatel_prj.asgi:application
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.10"
       - key: DATABASE_URL
-        fromDatabase:
-          name: relatel-db
-          property: connectionString
+        sync: false # Vous collerez l'URL de Neon.tech ici dans l'interface Render
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -45,7 +39,6 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
-
 
   # Frontend Static Site
   - type: web
