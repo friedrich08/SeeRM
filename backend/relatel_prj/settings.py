@@ -181,8 +181,9 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-LOGIN_REDIRECT_URL = os.getenv('LOGIN_REDIRECT_URL', f'{BACKEND_BASE_URL}/api/auth/google/callback/')
-LOGOUT_REDIRECT_URL = os.getenv('LOGOUT_REDIRECT_URL', FRONTEND_URL)
+# Utiliser l'URL de base pour la redirection
+LOGIN_REDIRECT_URL = f"{BACKEND_BASE_URL.rstrip('/')}/api/auth/google/callback/"
+LOGOUT_REDIRECT_URL = FRONTEND_URL
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
