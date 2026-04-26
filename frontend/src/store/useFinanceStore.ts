@@ -45,6 +45,7 @@ interface FinanceStore {
   fetchFactures: (clientId?: number) => Promise<void>;
   createDevis: (payload: Partial<Devis>) => Promise<void>;
   createFacture: (payload: Partial<Facture>) => Promise<void>;
+  updateFactureStatus: (id: number, statut: string) => Promise<void>;
   acceptDevis: (id: number) => Promise<void>;
   downloadDevisPDF: (id: number, numero: string) => Promise<void>;
   downloadFacturePDF: (id: number, numero: string) => Promise<void>;
@@ -93,6 +94,18 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
     try {
       const response = await api.post('/factures/', payload);
       set((state) => ({ factures: [response.data, ...state.factures] }));
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  },
+
+  updateFactureStatus: async (id, statut) => {
+    try {
+      const response = await api.patch(`/factures/${id}/`, { statut });
+      set((state) => ({
+        factures: state.factures.map((invoice) => (invoice.id === id ? response.data : invoice)),
+      }));
     } catch (error) {
       console.error(error);
       throw error;

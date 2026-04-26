@@ -82,7 +82,8 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     try {
       const response = await api.patch(`/clients/${id}/`, clientData);
       set({
-        clients: get().clients.map(c => c.id === id ? response.data : c)
+        clients: get().clients.map(c => c.id === id ? response.data : c),
+        currentClient: get().currentClient?.id === id ? response.data : get().currentClient,
       });
     } catch (error: any) {
       set({ error: error.message });

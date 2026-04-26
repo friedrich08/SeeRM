@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useClientStore } from '../store/useClientStore';
 import { usePipelineStore } from '../store/usePipelineStore';
 import { useFinanceStore, type LigneArticle } from '../store/useFinanceStore';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   Building2,
   Mail,
@@ -58,13 +59,15 @@ const emptyDocumentForm = {
   notes: '',
   lignes: [createEmptyLine()] as LigneArticle[],
 };
+const OPPORTUNITY_STATUS_OPTIONS = ['PROSPECT', 'QUALIFICATION', 'PROPOSITION', 'NEGOCIATION', 'GAGNE', 'PERDU'] as const;
 
 const ClientProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentClient, fetchClient, isLoading: isClientLoading } = useClientStore();
-  const { opportunities, fetchOpportunitiesByClient } = usePipelineStore();
-  const { devis, factures, fetchDevis, fetchFactures, downloadDevisPDF, downloadFacturePDF, createDevis, createFacture } = useFinanceStore();
+  const { can, user } = useAuthStore();
+  const { currentClient, fetchClient, updateClient, isLoading: isClientLoading } = useClientStore();
+  const { opportunities, fetchOpportunitiesByClient, updateOpportunityStatus } = usePipelineStore();
+  const { devis, factures, fetchDevis, fetchFactures, downloadDevisPDF, downloadFacturePDF, createDevis, createFacture, updateFactureStatus } = useFinanceStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'contacts' | 'opportunities' | 'finance'>('overview');
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -75,6 +78,8 @@ const ClientProfile = () => {
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const canWritePipeline = can('pipeline', 'write');
+  const canWriteFinance = can('finance', 'write');
 
   useEffect(() => {
     if (id) {
@@ -185,6 +190,51 @@ const ClientProfile = () => {
       navigate(`/chat?conversation=${response.data.id}`);
     } catch (error: any) {
       setActionError(error?.response?.data?.detail || 'Impossible d ouvrir la conversation pour ce client.');
+    }
+  };
+
+  const convertProspectToClient = async () => {
+    if (!currentClient || currentClient.type_client === 'CLIENT') {
+      return;
+    }
+    setActionError('');
+    setActionMessage('');
+    try {
+      await updateClient(currentClient.id, { type_client: 'CLIENT' });
+      await refreshClientData();
+      setActionMessage('Le prospect a ete converti en client.');
+    } catch (error: any) {
+      setActionError(error?.response?.data?.detail || 'Impossible de convertir ce prospect en client.');
+    }
+  };
+
+  const confirmInvoicePayment = async (invoiceId: number) => {
+    if (!currentClient) {
+      return;
+    }
+    setActionError('');
+    setActionMessage('');
+    try {
+      await updateFactureStatus(invoiceId, 'PAYE');
+      await fetchFactures(currentClient.id);
+      setActionMessage('La facture est marquee comme payee.');
+    } catch (error: any) {
+      setActionError(error?.response?.data?.detail || 'Impossible de confirmer le paiement de cette facture.');
+    }
+  };
+
+  const updateOpportunity = async (opportunityId: number, statut: string) => {
+    if (!currentClient) {
+      return;
+    }
+    setActionError('');
+    setActionMessage('');
+    try {
+      await updateOpportunityStatus(opportunityId, statut);
+      await fetchOpportunitiesByClient(currentClient.id);
+      setActionMessage('Le statut de l opportunite a ete mis a jour.');
+    } catch (error: any) {
+      setActionError(error?.response?.data?.detail || 'Impossible de modifier le statut de cette opportunite.');
     }
   };
 
@@ -338,7 +388,7 @@ const ClientProfile = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex w-full flex-wrap gap-3 lg:w-auto">
             <a href={`mailto:${currentClient.email_principal}`} className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-brand-primary shadow-sm">
               <Mail size={16} />
               Contacter
@@ -355,6 +405,14 @@ const ClientProfile = () => {
               <Download size={16} />
               Exporter le fichier Excel
             </button>
+            {user?.role === 'ADMIN' && currentClient.type_client === 'PROSPECT' && (
+              <button
+                onClick={convertProspectToClient}
+                className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 shadow-sm"
+              >
+                Convertir en client
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -365,7 +423,8 @@ const ClientProfile = () => {
         </div>
       )}
 
-      <nav className="flex gap-1 mb-8 bg-gray-100/50 p-1 rounded-2xl w-fit">
+      <nav className="mb-8 w-fit rounded-2xl bg-gray-100/50 p-1">
+        <div className="flex gap-1 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -376,18 +435,19 @@ const ClientProfile = () => {
             {tab.label}
           </button>
         ))}
+        </div>
       </nav>
 
       <div className="space-y-6">
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="md:col-span-2 space-y-6">
               <section className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                   <Building2 size={20} className="text-brand-primary" />
                   Informations generales
                 </h3>
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">SIRET</p>
                     <p className="font-mono text-brand-primary">{currentClient.siret || 'Non renseigne'}</p>
@@ -410,7 +470,7 @@ const ClientProfile = () => {
                 </div>
               </section>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Opportunites</p>
                   <p className="text-3xl font-bold text-brand-primary">{opportunities.length}</p>
@@ -516,7 +576,7 @@ const ClientProfile = () => {
               </button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full min-w-[720px] text-left">
                 <thead className="bg-bg-light">
                   <tr>
                     <th className="px-6 py-4 text-xs font-bold uppercase text-brand-secondary">Nom</th>
@@ -552,7 +612,7 @@ const ClientProfile = () => {
               <h3 className="text-lg font-bold">Opportunites commerciales</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full min-w-[760px] text-left">
                 <thead className="bg-bg-light">
                   <tr>
                     <th className="px-6 py-4 text-xs font-bold uppercase text-brand-secondary">Titre</th>
@@ -567,9 +627,23 @@ const ClientProfile = () => {
                       <tr key={opportunity.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-6 py-4 font-medium text-brand-primary">{opportunity.titre}</td>
                         <td className="px-6 py-4">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${opportunity.statut === 'GAGNE' ? 'bg-green-50 text-green-600' : opportunity.statut === 'PERDU' ? 'bg-red-50 text-red-600' : 'bg-brand-primary/5 text-brand-primary'}`}>
-                            {opportunity.statut}
-                          </span>
+                          {canWritePipeline ? (
+                            <select
+                              value={opportunity.statut}
+                              onChange={(event) => updateOpportunity(opportunity.id, event.target.value)}
+                              className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold uppercase text-brand-primary"
+                            >
+                              {OPPORTUNITY_STATUS_OPTIONS.map((status) => (
+                                <option key={status} value={status}>
+                                  {status}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${opportunity.statut === 'GAGNE' ? 'bg-green-50 text-green-600' : opportunity.statut === 'PERDU' ? 'bg-red-50 text-red-600' : 'bg-brand-primary/5 text-brand-primary'}`}>
+                              {opportunity.statut}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-sm font-bold text-brand-primary">{formatXOF(Number(opportunity.montant_estime))}</td>
                         <td className="px-6 py-4 text-sm text-brand-secondary text-right">
@@ -599,7 +673,7 @@ const ClientProfile = () => {
                 </button>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left">
+                <table className="w-full min-w-[760px] text-left">
                   <thead className="bg-bg-light">
                     <tr>
                       <th className="px-6 py-4 text-xs font-bold uppercase text-brand-secondary">Numero</th>
@@ -641,7 +715,7 @@ const ClientProfile = () => {
                 <h3 className="text-lg font-bold">Factures</h3>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left">
+                <table className="w-full min-w-[860px] text-left">
                   <thead className="bg-bg-light">
                     <tr>
                       <th className="px-6 py-4 text-xs font-bold uppercase text-brand-secondary">Numero</th>
@@ -662,6 +736,15 @@ const ClientProfile = () => {
                           </td>
                           <td className="px-6 py-4 text-sm font-bold text-brand-primary">{formatXOF(Number(invoice.total_ttc))}</td>
                           <td className="px-6 py-4 text-right">
+                            {canWriteFinance && invoice.statut !== 'PAYE' && (
+                              <button
+                                onClick={() => confirmInvoicePayment(invoice.id)}
+                                className="mr-2 rounded-lg border border-green-200 bg-green-50 px-3 py-1 text-xs font-bold text-green-700"
+                                title="Confirmer le paiement"
+                              >
+                                Marquer payee
+                              </button>
+                            )}
                             <button onClick={() => downloadFacturePDF(invoice.id, invoice.numero)} className="p-2 text-gray-400 hover:text-brand-primary transition-colors" title="Telecharger le PDF">
                               <Download size={18} />
                             </button>

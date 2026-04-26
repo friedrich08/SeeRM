@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { Layout, TrendingUp, Users, Target, BarChart3 } from 'lucide-react';
-import { formatXOF } from '../lib/currency';
+import { formatXOF, formatCompactXOF } from '../lib/currency';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,20 +22,22 @@ ChartJS.register(
 );
 
 const MetricCard = ({ title, value, subtext, icon: Icon, children }: any) => (
-  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
+  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col min-h-full hover:shadow-md transition-shadow overflow-hidden">
     <div className="flex justify-between items-center mb-4">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-gray-50 rounded-xl text-brand-primary">
+        <div className="p-2 bg-gray-50 rounded-xl text-brand-primary shrink-0">
           <Icon size={20} />
         </div>
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">{title}</h3>
+        <h3 className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider line-clamp-1">{title}</h3>
       </div>
     </div>
     <div className="mb-4">
-      <span className="text-3xl font-bold tracking-tight text-brand-primary">{value}</span>
+      <div className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-brand-primary break-words leading-tight">
+        {value}
+      </div>
       {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
     </div>
-    <div className="flex-1 min-h-[100px]">
+    <div className="flex-1 min-h-[80px]">
       {children}
     </div>
   </div>
@@ -101,20 +103,24 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <MetricCard title="Revenus encaisses" value={formatXOF(stats.kpi.total_revenue)} icon={TrendingUp} subtext="Factures reglees">
-            <Line data={revenueData} options={{ 
-                responsive: true, maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false } }
-            }} />
+        <MetricCard title="Revenus encaisses" value={formatCompactXOF(stats.kpi.total_revenue)} icon={TrendingUp} subtext="Factures reglees">
+            <div className="h-[100px]">
+                <Line data={revenueData} options={{ 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }} />
+            </div>
         </MetricCard>
 
-        <MetricCard title="Valeur du pipeline" value={formatXOF(stats.kpi.pipeline_value)} icon={Target} subtext="Opportunites actives">
-            <Bar data={oppData} options={{ 
-                responsive: true, maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false } }
-            }} />
+        <MetricCard title="Valeur du pipeline" value={formatCompactXOF(stats.kpi.pipeline_value)} icon={Target} subtext="Opportunites actives">
+            <div className="h-[100px]">
+                <Bar data={oppData} options={{ 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }} />
+            </div>
         </MetricCard>
 
         <MetricCard title="Nouveaux clients" value={stats.kpi.new_clients} icon={Users} subtext="Total clients et prospects">

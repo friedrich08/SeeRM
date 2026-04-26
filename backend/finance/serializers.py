@@ -25,6 +25,8 @@ class DevisSerializer(serializers.ModelSerializer):
         extra_kwargs = {'numero': {'required': False}}
 
     def validate(self, attrs):
+        if self.instance is not None:
+            return attrs
         lignes_data = self.context.get('request').data.get('lignes', [])
         if not lignes_data:
             raise serializers.ValidationError({'lignes': "Au moins une ligne avec un prix est requise."})
@@ -54,6 +56,8 @@ class FactureSerializer(serializers.ModelSerializer):
         extra_kwargs = {'numero': {'required': False}}
 
     def validate(self, attrs):
+        if self.instance is not None:
+            return attrs
         lignes_data = self.context.get('request').data.get('lignes', [])
         if not lignes_data:
             raise serializers.ValidationError({'lignes': "Au moins une ligne avec un prix est requise."})

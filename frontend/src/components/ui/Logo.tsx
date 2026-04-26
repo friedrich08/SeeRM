@@ -37,7 +37,7 @@ export const Logo = ({ size = 'md', showText = true }: { size?: 'sm' | 'md' | 'l
 
       {showText && (
         <div className="flex flex-col">
-          <span className={`${dimensions.text} font-bold tracking-[0.05em] text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 leading-none`}>
+          <span className={`${dimensions.text} font-bold tracking-[0.05em] text bg-clip-text bg-gradient-to-r from-white to-gray-400 leading-none`}>
             SeeRM
           </span>
           <span className={`${dimensions.sub} font-black tracking-[0.3em] text-[#8b5cf6] uppercase opacity-80 mt-0.5 leading-none`}>

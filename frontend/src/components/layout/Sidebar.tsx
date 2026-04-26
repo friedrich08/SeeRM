@@ -58,7 +58,7 @@ export const Sidebar = () => {
   const isClient = user?.role === 'CLIENT';
 
   return (
-    <aside className="w-[260px] h-screen fixed left-0 top-0 bg-gray-50/50 border-r border-gray-100 flex flex-col z-50">
+    <aside className="hidden lg:flex w-[260px] h-screen fixed left-0 top-0 bg-gray-50/50 border-r border-gray-100 flex-col z-50">
       <div className="p-6 mb-2">
         <Logo />
       </div>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../lib/api';
+import api, { setLogoutCallback } from '../lib/api';
 
 type AuthUser = {
   id: number;
@@ -30,17 +30,26 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   token: localStorage.getItem('token'),
   isAuthenticated: !!localStorage.getItem('token'),
-  isLoading: false,
+  isLoading: !!localStorage.getItem('token'),
   error: null,
 
   initAuth: async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      set({ isLoading: false });
+      set({ isLoading: false, isAuthenticated: false, user: null });
       return;
     }
-    set({ isLoading: true });
-    await get().fetchMe();
+    
+    // Si on a un token mais pas encore d'utilisateur, on le récupère impérativement
+    try {
+      set({ isLoading: true });
+      await get().fetchMe();
+    } catch (error) {
+      console.error("Erreur lors de l'initialisation de l'auth:", error);
+      // En cas d'erreur critique (401), fetchMe appellera logout() via l'intercepteur
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   login: async (email, password) => {
@@ -96,6 +105,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
-    set({ user: null, isAuthenticated: false, error: null, token: null });
+    set({ user: null, isAuthenticated: false, error: null, token: null, isLoading: false });
   },
 }));
+
+// Enregistrer le callback de déconnexion pour l'intercepteur API
+setLogoutCallback(() => {
+  useAuthStore.getState().logout();
+});
