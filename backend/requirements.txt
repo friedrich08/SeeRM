@@ -11,3 +11,7 @@ psycopg2-binary
 whitenoise
 gunicorn
 requests
+xhtml2pdf
+reportlab
+arabic-reshaper
+python-bidi
