@@ -1,6 +1,7 @@
 python-bidi==0.4.2
 django
 daphne
+channels==4.1.0
 django-cors-headers
 djangorestframework
 django-filter
