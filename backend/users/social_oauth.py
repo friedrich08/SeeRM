@@ -12,7 +12,9 @@ def _is_placeholder(value: str) -> bool:
 
 
 def _backend_domain() -> str:
-    parsed = urlparse(getattr(settings, "BACKEND_BASE_URL", "http://localhost:8000"))
+    url = getattr(settings, "BACKEND_BASE_URL", "http://localhost:8000")
+    parsed = urlparse(url)
+    # On retourne juste le domaine (ex: seerm-2-backend.onrender.com)
     return parsed.netloc or "localhost:8000"
 
 
@@ -24,14 +26,15 @@ def ensure_google_social_app() -> tuple[bool, str]:
         return False, "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET non renseignes dans .env"
 
     try:
-        site, _ = Site.objects.get_or_create(
+        domain = _backend_domain()
+        site, created = Site.objects.get_or_create(
             id=getattr(settings, "SITE_ID", 1),
-            defaults={"domain": _backend_domain(), "name": "SeeRM"},
+            defaults={"domain": domain, "name": "SeeRM"},
         )
-        if site.domain != _backend_domain():
-            site.domain = _backend_domain()
+        if site.domain != domain:
+            site.domain = domain
             site.name = "SeeRM"
-            site.save(update_fields=["domain", "name"])
+            site.save()
 
         app, _ = SocialApp.objects.get_or_create(
             provider="google",
