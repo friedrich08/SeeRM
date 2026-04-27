@@ -10,10 +10,19 @@ class OpportunityViewSet(viewsets.ModelViewSet):
     permission_classes = [PipelinePermission]
 
     def get_queryset(self):
-        if self.request.user.role == 'ADMIN':
+        user = self.request.user
+        # All roles except CLIENT can see everything in the pipeline for now, 
+        # or we can restrict more based on user.role if needed.
+        # Following PipelinePermission 'read' which allows all staff roles.
+        if user.role in ('ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'SUPPORT'):
             queryset = Opportunity.objects.all()
+        elif user.role == 'CLIENT':
+            if user.client_link:
+                queryset = Opportunity.objects.filter(client=user.client_link)
+            else:
+                queryset = Opportunity.objects.none()
         else:
-            queryset = Opportunity.objects.filter(owner=self.request.user)
+            queryset = Opportunity.objects.filter(owner=user)
             
         statut = self.request.query_params.get('statut')
         if statut:
@@ -26,13 +35,18 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-updated_at')
 
     def perform_create(self, serializer):
+        user = self.request.user
+        if user.role == 'CLIENT':
+            raise PermissionDenied("Les clients ne peuvent pas creer d'opportunites.")
+        
         client = serializer.validated_data['client']
-        if self.request.user.role != 'ADMIN' and client.owner_id != self.request.user.id:
-            raise PermissionDenied("Vous ne pouvez pas creer une opportunite pour ce client.")
-        serializer.save(owner=self.request.user)
+        # Staff can create for anyone, or we could add more specific checks
+        serializer.save(owner=user)
 
     def perform_update(self, serializer):
-        client = serializer.validated_data.get('client')
-        if client and self.request.user.role != 'ADMIN' and client.owner_id != self.request.user.id:
-            raise PermissionDenied("Client non autorise pour cette opportunite.")
+        user = self.request.user
+        if user.role == 'CLIENT':
+            raise PermissionDenied("Les clients ne peuvent pas modifier les opportunites.")
+        
+        # Staff roles can update
         serializer.save()

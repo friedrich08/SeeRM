@@ -98,8 +98,27 @@ const Kanban = ({ hideHeader = false }: { hideHeader?: boolean }) => {
     const { active, over } = event;
     setActiveItem(null);
     if (!over) return;
-    if (canWritePipeline && COLUMNS.find((column) => column.id === over.id)) {
-      await updateOpportunityStatus(Number(active.id), String(over.id));
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    // Detect if the drop target is a column (status) or a card
+    let newStatus = COLUMNS.find((column) => column.id === overId)?.id;
+
+    if (!newStatus) {
+      // If dropped over a card, find that card's status
+      const targetOpp = opportunities.find((opp) => opp.id === overId);
+      if (targetOpp) {
+        newStatus = targetOpp.statut;
+      }
+    }
+
+    if (canWritePipeline && newStatus) {
+      const currentOpp = opportunities.find((opp) => opp.id === activeId);
+      // Only update if the status has actually changed
+      if (currentOpp && currentOpp.statut !== newStatus) {
+        await updateOpportunityStatus(Number(activeId), String(newStatus));
+      }
     }
   };
 
