@@ -4,11 +4,11 @@ from rest_framework.permissions import BasePermission
 MODULE_PERMISSIONS = {
     'clients': {
         'read': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'SUPPORT', 'CLIENT'},
-        'write': {'ADMIN', 'MANAGER', 'SALES'},
+        'write': {'ADMIN', 'MANAGER', 'SALES', 'CLIENT'},
     },
     'pipeline': {
         'read': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'SUPPORT'},
-        'write': {'ADMIN', 'MANAGER', 'SALES'},
+        'write': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'SUPPORT'},
     },
     'finance': {
         'read': {'ADMIN', 'MANAGER', 'SALES', 'FINANCE', 'CLIENT'},

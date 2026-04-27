@@ -90,8 +90,12 @@ const Clients = () => {
                   <tr key={client.id} className="group transition-colors hover:bg-gray-50/50">
                     <td className="cursor-pointer px-6 py-4" onClick={() => navigate(`/clients/${client.id}`)}>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-brand-primary transition-colors group-hover:bg-brand-primary group-hover:text-white">
-                          <Building2 size={20} />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-brand-primary transition-colors group-hover:bg-brand-primary group-hover:text-white overflow-hidden">
+                          {client.avatar_url ? (
+                            <img src={client.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Building2 size={20} />
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-brand-primary hover:underline">{client.nom_societe}</p>

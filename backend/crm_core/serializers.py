@@ -18,8 +18,16 @@ class ClientNoteSerializer(serializers.ModelSerializer):
 class ClientSerializer(serializers.ModelSerializer):
     contacts = ContactSerializer(many=True, read_only=True)
     notes = ClientNoteSerializer(many=True, read_only=True)
+    avatar_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Client
         fields = '__all__'
         read_only_fields = ('owner',)
+
+    def get_avatar_url(self, obj):
+        # Return the avatar of the first linked user with role CLIENT
+        user = obj.linked_users.filter(role='CLIENT').first()
+        if user and user.avatar_url:
+            return user.avatar_url
+        return None

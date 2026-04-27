@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import CustomUser
 from .permissions import SystemPermission, build_permissions_payload
@@ -63,10 +64,79 @@ class MeView(APIView):
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "role": user.role,
+                "avatar_url": user.avatar_url,
                 "client_link": user.client_link_id,
                 "permissions": build_permissions_payload(user),
             }
         )
+
+    def patch(self, request):
+        user = request.user
+        data = request.data
+
+        if "first_name" in data:
+            user.first_name = data["first_name"]
+        if "last_name" in data:
+            user.last_name = data["last_name"]
+        if "avatar_url" in data:
+            user.avatar_url = data["avatar_url"]
+        if "email" in data:
+            email = data["email"].strip().lower()
+            if email and email != user.email:
+                if CustomUser.objects.filter(email=email).exclude(id=user.id).exists():
+                    return Response({"detail": "Cet email est déjà utilisé."}, status=status.HTTP_400_BAD_REQUEST)
+                user.email = email
+        
+        if "password" in data and data["password"]:
+            if len(data["password"]) < 8:
+                return Response({"detail": "Le mot de passe doit contenir au moins 8 caractères."}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(data["password"])
+
+        user.save()
+        return Response(
+            {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role,
+                "avatar_url": user.avatar_url,
+                "client_link": user.client_link_id,
+            }
+        )
+
+
+class ProfileAvatarUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        if 'avatar' not in request.FILES:
+            return Response({"detail": "Aucun fichier n'a été fourni."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        avatar = request.FILES['avatar']
+        user = request.user
+        
+        # Simple file validation
+        if not avatar.name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            return Response({"detail": "Format de fichier non supporté."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Save file to media folder
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        import uuid
+        
+        ext = avatar.name.split('.')[-1]
+        filename = f"avatars/{user.id}_{uuid.uuid4().hex}.{ext}"
+        path = default_storage.save(filename, ContentFile(avatar.read()))
+        
+        # Update user avatar_url
+        # If BACKEND_BASE_URL is not set, use a relative path or a default
+        backend_base = getattr(settings, "BACKEND_BASE_URL", "http://localhost:8000").rstrip("/")
+        user.avatar_url = f"{backend_base}{settings.MEDIA_URL}{path}"
+        user.save()
+        
+        return Response({"avatar_url": user.avatar_url})
 
 
 class GoogleCallbackJWTView(APIView):

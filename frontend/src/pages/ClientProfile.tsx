@@ -370,8 +370,12 @@ const ClientProfile = () => {
 
         <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-brand-primary/5 flex items-center justify-center text-brand-primary border border-brand-primary/10">
-              <Building2 size={32} />
+            <div className="w-16 h-16 rounded-2xl bg-brand-primary/5 flex items-center justify-center text-brand-primary border border-brand-primary/10 overflow-hidden">
+              {currentClient.avatar_url ? (
+                <img src={currentClient.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Building2 size={32} />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-3">

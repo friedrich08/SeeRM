@@ -118,11 +118,15 @@ const Chat = () => {
               onClick={() => setActiveConversation(conv.id)}
               className={`w-full p-4 flex gap-4 hover:bg-white transition-colors border-b border-gray-50/50 ${activeConversation?.id === conv.id ? 'bg-white shadow-sm z-10' : ''}`}
             >
-              <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center text-brand-primary shrink-0">
-                <User size={24} />
+              <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center text-brand-primary shrink-0 overflow-hidden">
+                {conv.client_detail?.avatar_url ? (
+                  <img src={conv.client_detail.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={24} />
+                )}
               </div>
               <div className="text-left overflow-hidden">
-                <p className="font-bold text-sm text-brand-primary truncate">{conv.client_detail.nom_societe}</p>
+                <p className="font-bold text-sm text-brand-primary truncate">{conv.client_detail?.nom_societe || 'Société inconnue'}</p>
                 <p className="text-xs text-brand-secondary truncate">{conv.messages[conv.messages.length - 1]?.content || 'Aucun message'}</p>
               </div>
             </button>
@@ -135,8 +139,12 @@ const Chat = () => {
           <>
             <header className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-brand-primary text-white flex items-center justify-center">
-                  <User size={20} />
+                <div className="w-10 h-10 rounded-xl bg-brand-primary text-white flex items-center justify-center overflow-hidden">
+                  {activeConversation.client_detail.avatar_url ? (
+                    <img src={activeConversation.client_detail.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={20} />
+                  )}
                 </div>
                 <div>
                   <h3 className="font-bold text-brand-primary">{activeConversation.client_detail.nom_societe}</h3>

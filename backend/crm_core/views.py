@@ -20,7 +20,16 @@ class ClientViewSet(viewsets.ModelViewSet):
         return Client.objects.filter(owner=user).order_by('-updated_at')
 
     def perform_create(self, serializer):
+        if self.request.user.role == 'CLIENT':
+            raise PermissionDenied("Les clients ne peuvent pas créer de fiches clients.")
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        if user.role == 'CLIENT':
+            if not user.client_link or serializer.instance.id != user.client_link.id:
+                raise PermissionDenied("Vous ne pouvez modifier que votre propre fiche client.")
+        serializer.save()
 
 class ContactViewSet(viewsets.ModelViewSet):
     queryset = Contact.objects.none()

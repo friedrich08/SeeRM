@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
+  BarChart3,
   Users,
   Kanban,
   FileText,
@@ -72,6 +73,7 @@ export const Sidebar = () => {
             <>
                 <NavSection title="Pilotage">
                     <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Tableau de bord" />
+                    <SidebarItem to="/analytics" icon={BarChart3} label="Analytique" />
                     <SidebarItem to="/calendar" icon={Calendar} label="Calendrier" />
                     {can('pipeline', 'read') && <SidebarItem to="/pipeline" icon={Kanban} label="Pipeline" />}
                 </NavSection>
@@ -108,7 +110,13 @@ export const Sidebar = () => {
         </div>
 
         <div className="flex items-center gap-3 p-2 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`} alt="Utilisateur" className="w-9 h-9 rounded-xl bg-gray-100" />
+          <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold text-[13px] overflow-hidden border border-indigo-100">
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="Utilisateur" className="w-full h-full object-cover" />
+            ) : (
+              `${user?.first_name?.charAt(0) || ''}${user?.last_name?.charAt(0) || ''}`.toUpperCase() || '?'
+            )}
+          </div>
           <div className="overflow-hidden">
             <p className="text-[12px] font-bold text-brand-primary truncate">{fullName}</p>
             <p className="text-[10px] text-gray-400 truncate">{user?.role}</p>

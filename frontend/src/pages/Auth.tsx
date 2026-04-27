@@ -25,12 +25,13 @@ const CLIENT_ACCOUNTS = [
 ];
 
 const Auth = () => {
-  const { isAuthenticated, isLoading, error, login, completeSocialAuth } = useAuthStore();
-  const [mode, setMode] = useState<'login' | 'directory'>('login');
+  const { isAuthenticated, isLoading, error, login, register, completeSocialAuth } = useAuthStore();
+  const [mode, setMode] = useState<'login' | 'directory' | 'register'>('login');
   const [googleStatus, setGoogleStatus] = useState<{ configured?: boolean; login_url?: string; note?: string }>({});
   const [googleInfo, setGoogleInfo] = useState('');
   const [isHandlingSocialAuth, setIsHandlingSocialAuth] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [registerForm, setRegisterForm] = useState({ email: '', password: '', first_name: '', last_name: '' });
   const backendBase = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
 
   useEffect(() => {
@@ -69,6 +70,11 @@ const Auth = () => {
     await login(loginForm.email, loginForm.password);
   };
 
+  const submitRegister = async (event: FormEvent) => {
+    event.preventDefault();
+    await register(registerForm);
+  };
+
   const useDemoAccount = (email: string, password: string) => {
     setMode('login');
     setLoginForm({ email, password });
@@ -105,6 +111,12 @@ const Auth = () => {
               Connexion
             </button>
             <button
+              onClick={() => setMode('register')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'register' ? 'bg-white shadow-sm text-[#0b0f17] border border-gray-100' : 'text-gray-400'}`}
+            >
+              Inscription
+            </button>
+            <button
               onClick={() => setMode('directory')}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'directory' ? 'bg-white shadow-sm text-[#0b0f17] border border-gray-100' : 'text-gray-400'}`}
             >
@@ -139,6 +151,59 @@ const Auth = () => {
               <button disabled={isLoading} className="w-full bg-[#0b0f17] text-white py-4 rounded-2xl font-bold flex justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-gray-200">
                 <LogIn size={18} />
                 Se connecter
+              </button>
+            </form>
+          ) : mode === 'register' ? (
+            <form onSubmit={submitRegister} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Prénom</label>
+                  <input
+                      type="text"
+                      required
+                      placeholder="Jean"
+                      value={registerForm.first_name}
+                      onChange={(e) => setRegisterForm({ ...registerForm, first_name: e.target.value })}
+                      className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all bg-gray-50/50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nom</label>
+                  <input
+                      type="text"
+                      required
+                      placeholder="Dupont"
+                      value={registerForm.last_name}
+                      onChange={(e) => setRegisterForm({ ...registerForm, last_name: e.target.value })}
+                      className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all bg-gray-50/50"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email</label>
+                <input
+                    type="email"
+                    required
+                    placeholder="jean.dupont@exemple.com"
+                    value={registerForm.email}
+                    onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all bg-gray-50/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Mot de passe</label>
+                <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={registerForm.password}
+                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all bg-gray-50/50"
+                />
+              </div>
+              <button disabled={isLoading} className="w-full bg-[#0b0f17] text-white py-4 rounded-2xl font-bold flex justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-gray-200 mt-2">
+                <LogIn size={18} />
+                S'inscrire
               </button>
             </form>
           ) : (

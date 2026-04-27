@@ -6,6 +6,7 @@ type AuthUser = {
   email: string;
   first_name: string;
   last_name: string;
+  avatar_url?: string;
   role: 'ADMIN' | 'MANAGER' | 'SALES' | 'FINANCE' | 'SUPPORT' | 'CLIENT';
   client_link?: number;
   permissions?: Record<string, Record<string, boolean>>;

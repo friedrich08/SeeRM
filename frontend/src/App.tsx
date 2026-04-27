@@ -3,6 +3,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { AccessRoute } from './components/auth/AccessRoute';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
+import Analytics from './pages/Analytics';
 import Kanban from './pages/Kanban';
 import Clients from './pages/Clients';
 import DevisList from './pages/DevisList';
@@ -42,6 +43,7 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/analytics" element={<AccessRoute module="system"><Analytics /></AccessRoute>} />
           <Route path="/portal" element={<ClientPortal />} />
           <Route path="/clients" element={<AccessRoute module="clients"><Clients /></AccessRoute>} />
           <Route path="/clients/:id" element={<AccessRoute module="clients"><ClientProfile /></AccessRoute>} />

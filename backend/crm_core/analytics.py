@@ -34,16 +34,6 @@ class DashboardStatsView(APIView):
         total_opps = opps.count()
         conversion_rate = (won_count / total_opps * 100) if total_opps > 0 else 0
 
-        # Monthly Trends (last 6 months)
-        six_months_ago = timezone.now() - datetime.timedelta(days=180)
-        monthly_revenue = (
-            factures.filter(statut='PAYE', date_emission__gte=six_months_ago)
-            .annotate(month=TruncMonth('date_emission'))
-            .values('month')
-            .annotate(total=Count('id')) # Placeholder for simple count, sum property is hard in aggregate
-            .order_by('month')
-        )
-        
         # Better Monthly Revenue Trend
         revenue_trend = []
         for i in range(5, -1, -1):
@@ -74,3 +64,39 @@ class DashboardStatsView(APIView):
                 "perdu": opps.filter(statut='PERDU').count(),
             }
         })
+
+class AnalyticsClientView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        
+        if user.role in ('ADMIN', 'FINANCE', 'MANAGER'):
+            clients = Client.objects.all()
+            opps = Opportunity.objects.all()
+            factures = Facture.objects.all()
+        else:
+            clients = Client.objects.filter(owner=user)
+            opps = Opportunity.objects.filter(owner=user)
+            factures = Facture.objects.filter(owner=user)
+
+        client_stats = []
+        for client in clients:
+            client_opps = opps.filter(client=client)
+            client_factures = factures.filter(client=client, statut='PAYE')
+            
+            total_revenue = sum(f.total_ttc for f in client_factures)
+            opps_count = client_opps.count()
+            won_opps = client_opps.filter(statut='GAGNE').count()
+            
+            client_stats.append({
+                "id": client.id,
+                "nom_societe": client.nom_societe,
+                "total_revenue": float(total_revenue),
+                "opportunities_count": opps_count,
+                "won_opportunities": won_opps,
+                "conversion_rate": (won_opps / opps_count * 100) if opps_count > 0 else 0,
+                "avatar_url": client.linked_users.filter(role='CLIENT').first().avatar_url if client.linked_users.filter(role='CLIENT').exists() else None
+            })
+
+        return Response(client_stats)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, User, Building, MessageSquare, ShieldCheck, FileCheck2, Download } from 'lucide-react';
+import { Send, Paperclip, User, Building, MessageSquare, ShieldCheck, FileCheck2, Download, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 import { API_BASE_URL } from '../lib/api';
 import api from '../lib/api';
 import { Logo } from '../components/ui/Logo';
@@ -8,7 +8,7 @@ import { useFinanceStore } from '../store/useFinanceStore';
 import { formatXOF } from '../lib/currency';
 
 const ClientPortal = () => {
-  const user = useAuthStore((state) => state.user);
+  const { user, fetchMe } = useAuthStore();
   const { devis, factures, fetchDevis, fetchFactures, acceptDevis, downloadDevisPDF, downloadFacturePDF } = useFinanceStore();
   const [messages, setMessages] = useState<any[]>([]);
   const [client, setClient] = useState<any>(null);
@@ -17,12 +17,24 @@ const ClientPortal = () => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [activeTab, setActiveTab] = useState<'chat' | 'documents' | 'profile'>('chat');
   const [financeMessage, setFinanceMessage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({ nom_societe: '', telephone: '', adresse: '' });
+  const [profileMessage, setProfileMessage] = useState({ text: '', type: '' });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user?.client_link) return;
 
-    api.get(`/clients/${user.client_link}/`).then((res) => setClient(res.data));
+    api.get(`/clients/${user.client_link}/`).then((res) => {
+      setClient(res.data);
+      setEditData({
+        nom_societe: res.data.nom_societe,
+        telephone: res.data.telephone || '',
+        adresse: res.data.adresse || '',
+      });
+    });
     fetchDevis(user.client_link);
     fetchFactures(user.client_link);
 
@@ -90,6 +102,49 @@ const ClientPortal = () => {
       setFinanceMessage('Le devis a ete accepte. Votre equipe CRM en sera informee.');
     } catch {
       setFinanceMessage("Impossible d'accepter ce devis pour le moment.");
+    }
+  };
+
+  const handleUpdateClient = async () => {
+    if (!user?.client_link) return;
+    setProfileMessage({ text: '', type: '' });
+    try {
+      const res = await api.patch(`/clients/${user.client_link}/`, editData);
+      setClient(res.data);
+      setIsEditing(false);
+      setProfileMessage({ text: 'Informations mises à jour avec succès.', type: 'success' });
+    } catch (error: any) {
+      setProfileMessage({ 
+        text: error?.response?.data?.detail || "Erreur lors de la mise à jour des informations.", 
+        type: 'error' 
+      });
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    setIsUploading(true);
+    setProfileMessage({ text: '', type: '' });
+    try {
+      await api.post('/auth/upload-avatar/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      await fetchMe();
+      setProfileMessage({ text: 'Photo mise à jour avec succès.', type: 'success' });
+    } catch (error: any) {
+      setProfileMessage({ 
+        text: error?.response?.data?.detail || "Erreur lors de l'upload de la photo.", 
+        type: 'error' 
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -259,14 +314,85 @@ const ClientPortal = () => {
             <div className="flex-1 p-10 overflow-y-auto bg-white">
               <div className="max-w-2xl mx-auto">
                 <div className="flex items-center gap-6 mb-10">
-                  <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center text-[#0b0f17] border border-gray-100">
-                    <Building size={40} />
+                  <div className="relative group">
+                    <div className="w-24 h-24 bg-indigo-50 rounded-3xl flex items-center justify-center text-[#0b0f17] border border-indigo-100 overflow-hidden shadow-inner">
+                      {user?.avatar_url ? (
+                        <img src={user.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+                      ) : (
+                        <Building size={48} className="text-indigo-300" />
+                      )}
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center backdrop-blur-[2px]">
+                          <Loader2 size={24} className="text-white animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute -bottom-2 -right-2 bg-white p-2 rounded-xl shadow-lg border border-gray-100 text-indigo-600 hover:scale-110 active:scale-95 transition-all"
+                    >
+                      <Upload size={16} />
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-[#0b0f17]">{client?.nom_societe}</h3>
+                    <div className="flex items-center gap-3">
+                      {isEditing ? (
+                        <input 
+                          type="text" 
+                          value={editData.nom_societe}
+                          onChange={(e) => setEditData({...editData, nom_societe: e.target.value})}
+                          className="text-2xl font-bold text-[#0b0f17] border-b border-indigo-300 outline-none bg-indigo-50/30 px-2 rounded-t-lg"
+                        />
+                      ) : (
+                        <h3 className="text-2xl font-bold text-[#0b0f17]">{client?.nom_societe}</h3>
+                      )}
+                      
+                      {!isEditing ? (
+                        <button 
+                          onClick={() => setIsEditing(true)}
+                          className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-all uppercase tracking-widest"
+                        >
+                          Modifier
+                        </button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={handleUpdateClient}
+                            className="text-[10px] font-bold text-white bg-green-600 px-2 py-1 rounded-lg hover:bg-green-700 transition-all uppercase tracking-widest"
+                          >
+                            Enregistrer
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setIsEditing(false);
+                              setEditData({
+                                nom_societe: client.nom_societe,
+                                telephone: client.telephone || '',
+                                adresse: client.adresse || '',
+                              });
+                            }}
+                            className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-lg hover:bg-gray-200 transition-all uppercase tracking-widest"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-indigo-600 font-bold flex items-center gap-2 mt-1 uppercase text-[10px] tracking-widest">
                       <ShieldCheck size={14} /> Partenaire verifie SeeRM
                     </p>
+                    {profileMessage.text && (
+                      <p className={`text-[10px] mt-2 font-bold ${profileMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                        {profileMessage.text}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -278,12 +404,29 @@ const ClientPortal = () => {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Telephone</label>
-                      <div className="text-sm font-medium p-3 bg-gray-50 rounded-xl border border-gray-100">{client?.telephone || '—'}</div>
+                      {isEditing ? (
+                        <input 
+                          type="text"
+                          value={editData.telephone}
+                          onChange={(e) => setEditData({...editData, telephone: e.target.value})}
+                          className="w-full text-sm font-medium p-3 bg-white rounded-xl border border-indigo-200 outline-none focus:ring-2 focus:ring-indigo-500/10"
+                        />
+                      ) : (
+                        <div className="text-sm font-medium p-3 bg-gray-50 rounded-xl border border-gray-100">{client?.telephone || '—'}</div>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Adresse</label>
-                    <div className="text-sm font-medium p-3 bg-gray-50 rounded-xl border border-gray-100 min-h-[100px]">{client?.adresse}</div>
+                    {isEditing ? (
+                      <textarea 
+                        value={editData.adresse}
+                        onChange={(e) => setEditData({...editData, adresse: e.target.value})}
+                        className="w-full text-sm font-medium p-3 bg-white rounded-xl border border-indigo-200 outline-none focus:ring-2 focus:ring-indigo-500/10 min-h-[100px]"
+                      />
+                    ) : (
+                      <div className="text-sm font-medium p-3 bg-gray-50 rounded-xl border border-gray-100 min-h-[100px]">{client?.adresse}</div>
+                    )}
                   </div>
                 </div>
               </div>

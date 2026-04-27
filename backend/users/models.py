@@ -37,6 +37,7 @@ class CustomUser(AbstractUser):
     username = None
     email = models.EmailField('adresse email', unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_SALES)
+    avatar_url = models.URLField(max_length=500, null=True, blank=True)
     
     # New field to link a User to a specific Client company
     client_link = models.ForeignKey(
